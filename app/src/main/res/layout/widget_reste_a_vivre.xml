@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_reste_a_vivre"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:gravity="center_vertical">
+
+    <!-- Top header row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_header_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚡ BRICK • RESTE À VIVRE DU JOUR"
+            android:textColor="#38BDF8"
+            android:textStyle="bold"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/widget_refresh_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄"
+            android:textSize="14sp"
+            android:padding="4dp" />
+    </LinearLayout>
+
+    <!-- Main Amount Display -->
+    <TextView
+        android:id="@+id/widget_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
+        android:text="-- €"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="22sp" />
+
+    <!-- Details: Dépensé vs Quota -->
+    <TextView
+        android:id="@+id/widget_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Calcul en cours..."
+        android:textColor="#94A3B8"
+        android:textSize="11sp" />
+
+    <!-- Status pill -->
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_widget_status_pill"
+        android:paddingLeft="8dp"
+        android:paddingTop="3dp"
+        android:paddingRight="8dp"
+        android:paddingBottom="3dp"
+        android:text="🛡️ Synchronisé"
+        android:textColor="#10B981"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

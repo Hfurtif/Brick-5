@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">BRICK</string>
+    <string name="shortcut_add_expense_short">➕ Dépense</string>
+    <string name="shortcut_add_expense_long">➕ Ajouter une dépense</string>
+    <string name="widget_quick_add_title">BRICK ➕ Dépense Rapide</string>
+</resources>

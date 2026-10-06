@@ -1,0 +1,7 @@
+{
+  "name": "BRICK",
+  "description": "Gestion financière personnelle offline-first, budgets 50/30/20, actifs vs passifs et coach IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
