@@ -26,6 +26,9 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateProfile(profile: UserProfile)
+
+    @Query("DELETE FROM user_profile")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -62,6 +65,9 @@ interface GoalDao {
 
     @Delete
     suspend fun deleteGoal(goal: FinancialGoal)
+
+    @Query("DELETE FROM financial_goals")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -74,6 +80,9 @@ interface AssetDao {
 
     @Delete
     suspend fun deleteAssetLiability(item: AssetLiability)
+
+    @Query("DELETE FROM assets_liabilities")
+    suspend fun clearAll()
 }
 
 @Database(
@@ -83,7 +92,7 @@ interface AssetDao {
         FinancialGoal::class,
         AssetLiability::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class BrickDatabase : RoomDatabase() {

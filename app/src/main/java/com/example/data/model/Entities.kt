@@ -19,10 +19,10 @@ data class UserProfile(
     val payYourselfFirstPercentage: Int = 20,
     val isOnboarded: Boolean = false,
     val pinCode: String = "", // Vide si désactivé
-    val biometricEnabled: Boolean = true, // Empreinte digitale ou code du smartphone
+    val biometricEnabled: Boolean = false, // Empreinte digitale ou code du smartphone
     val hideAmounts: Boolean = false,
     val themeMode: String = "SYSTEM", // SYSTEM (Auto), DARK, LIGHT
-    val streakDays: Int = 4,
+    val streakDays: Int = 0,
     val lastActiveTimestamp: Long = System.currentTimeMillis()
 )
 
