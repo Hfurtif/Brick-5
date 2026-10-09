@@ -56,27 +56,31 @@ class DailyEveningRecapWorker(
         private const val WORK_NAME = "brick_daily_evening_recap_work"
 
         fun schedule(context: Context, hour: Int, minute: Int) {
-            val now = Calendar.getInstance()
-            val target = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            if (target.before(now)) {
-                target.add(Calendar.DAY_OF_YEAR, 1)
-            }
-            val initialDelayMillis = target.timeInMillis - now.timeInMillis
+            try {
+                val now = Calendar.getInstance()
+                val target = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                if (target.before(now)) {
+                    target.add(Calendar.DAY_OF_YEAR, 1)
+                }
+                val initialDelayMillis = target.timeInMillis - now.timeInMillis
 
-            val workRequest = PeriodicWorkRequestBuilder<DailyEveningRecapWorker>(24, TimeUnit.HOURS)
-                .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
-                .build()
+                val workRequest = PeriodicWorkRequestBuilder<DailyEveningRecapWorker>(24, TimeUnit.HOURS)
+                    .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
+                    .build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
-                workRequest
-            )
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    WORK_NAME,
+                    ExistingPeriodicWorkPolicy.UPDATE,
+                    workRequest
+                )
+            } catch (e: Exception) {
+                android.util.Log.w("DailyEveningRecapWorker", "Failed to schedule worker: ${e.message}")
+            }
         }
 
         fun runImmediateTest(context: Context) {

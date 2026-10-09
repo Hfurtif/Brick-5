@@ -174,13 +174,17 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            repository.initializeDefaultDataIfEmpty()
-            val user = repository.userProfile.firstOrNull() ?: UserProfile()
-            DailyEveningRecapWorker.schedule(
-                application,
-                user.dailyReminderHour,
-                user.dailyReminderMinute
-            )
+            try {
+                repository.initializeDefaultDataIfEmpty()
+                val user = repository.userProfile.firstOrNull() ?: UserProfile()
+                DailyEveningRecapWorker.schedule(
+                    application,
+                    user.dailyReminderHour,
+                    user.dailyReminderMinute
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("BrickViewModel", "Error in init: ${e.message}", e)
+            }
         }
     }
 

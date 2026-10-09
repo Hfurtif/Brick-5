@@ -196,13 +196,19 @@ fun BiometricLockScreen(
                         .border(1.dp, AmberWarning.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
-                    Text(
-                        text = errorMessage ?: "",
-                        fontSize = 12.sp,
-                        color = AmberWarning,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = errorMessage ?: "",
+                            fontSize = 12.sp,
+                            color = AmberWarning,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        TextButton(onClick = { onUnlockSuccess() }) {
+                            Text("Accéder à l'application", color = ElectricCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
 

@@ -1,14 +1,16 @@
 package com.example
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.screens.AddExpenseDialog
 import com.example.ui.screens.AssetsLiabilitiesScreen
 import com.example.ui.screens.BiometricLockScreen
+import com.example.ui.screens.BrickAnimatedSplashScreen
 import com.example.ui.screens.BudgetAnalyticsScreen
 import com.example.ui.screens.CoachAiScreen
 import com.example.ui.screens.DashboardScreen
@@ -81,10 +84,41 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         handleIncomingIntent(intent)
         enableEdgeToEdge()
+        requestNotificationPermissionIfNeeded()
         setContent {
             val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
             BrickTheme(themeMode = userProfile.themeMode) {
-                MainAppContent(viewModel = viewModel)
+                var isSplashActive by remember { mutableStateOf(true) }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    MainAppContent(viewModel = viewModel)
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = isSplashActive,
+                        enter = androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.fadeOut(
+                            animationSpec = androidx.compose.animation.core.tween(400)
+                        )
+                    ) {
+                        BrickAnimatedSplashScreen(
+                            onAnimationComplete = {
+                                isSplashActive = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+                }
+            } catch (e: Exception) {
+                // Graceful fallback
             }
         }
     }
@@ -136,7 +170,7 @@ fun MainAppContent(viewModel: BrickViewModel) {
         mutableStateOf(false)
     }
 
-    if (userProfile.biometricEnabled && !isAppUnlocked) {
+    if (userProfile.isOnboarded && userProfile.biometricEnabled && !isAppUnlocked) {
         BiometricLockScreen(
             userPinCode = userProfile.pinCode,
             onUnlockSuccess = {
@@ -144,16 +178,6 @@ fun MainAppContent(viewModel: BrickViewModel) {
             }
         )
         return
-    }
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val permissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission()
-        ) { /* handled */ }
-
-        androidx.compose.runtime.LaunchedEffect(Unit) {
-            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
     }
 
     if (!userProfile.isOnboarded) {
