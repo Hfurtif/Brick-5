@@ -14,12 +14,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -78,17 +82,19 @@ fun OnboardingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(BrickBackground)
-            .padding(24.dp),
+            .systemBarsPadding()
+            .imePadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // Header
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 8.dp)
         ) {
-            BrickLogo(size = 54.dp, showText = true)
-            Spacer(modifier = Modifier.height(16.dp))
+            BrickLogo(size = 46.dp, showText = true)
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Step Indicator Dots
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -107,39 +113,47 @@ fun OnboardingScreen(
             }
         }
 
-        // Animated Content per Step
-        AnimatedContent(
-            targetState = step,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
-            modifier = Modifier.weight(1f)
-        ) { targetStep ->
-            when (targetStep) {
-                1 -> StepOne(
-                    name = name,
-                    onNameChange = { name = it },
-                    currency = currency,
-                    onCurrencyChange = { currency = it }
-                )
-                2 -> StepTwo(
-                    salary = monthlySalaryStr,
-                    onSalaryChange = { monthlySalaryStr = it },
-                    payDay = payDayStr,
-                    onPayDayChange = { payDayStr = it },
-                    currency = currency
-                )
-                3 -> StepThree(
-                    fixedCharges = fixedChargesStr,
-                    onFixedChargesChange = { fixedChargesStr = it },
-                    reminderHour = reminderHourStr,
-                    onReminderHourChange = { reminderHourStr = it },
-                    currency = currency
-                )
-                4 -> StepFour(
-                    name = name,
-                    salary = monthlySalaryStr.toDoubleOrNull() ?: 2400.0,
-                    fixedCharges = fixedChargesStr.toDoubleOrNull() ?: 950.0,
-                    currency = currency
-                )
+        // Animated Content per Step (Scrollable so fields and buttons remain visible with keyboard)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            AnimatedContent(
+                targetState = step,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                modifier = Modifier.fillMaxWidth()
+            ) { targetStep ->
+                when (targetStep) {
+                    1 -> StepOne(
+                        name = name,
+                        onNameChange = { name = it },
+                        currency = currency,
+                        onCurrencyChange = { currency = it }
+                    )
+                    2 -> StepTwo(
+                        salary = monthlySalaryStr,
+                        onSalaryChange = { monthlySalaryStr = it },
+                        payDay = payDayStr,
+                        onPayDayChange = { payDayStr = it },
+                        currency = currency
+                    )
+                    3 -> StepThree(
+                        fixedCharges = fixedChargesStr,
+                        onFixedChargesChange = { fixedChargesStr = it },
+                        reminderHour = reminderHourStr,
+                        onReminderHourChange = { reminderHourStr = it },
+                        currency = currency
+                    )
+                    4 -> StepFour(
+                        name = name,
+                        salary = monthlySalaryStr.toDoubleOrNull() ?: 2400.0,
+                        fixedCharges = fixedChargesStr.toDoubleOrNull() ?: 950.0,
+                        currency = currency
+                    )
+                }
             }
         }
 
@@ -147,7 +161,7 @@ fun OnboardingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(top = 8.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

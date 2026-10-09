@@ -299,7 +299,7 @@ fun ChatBubble(message: CoachMessage) {
                 if (!isUser) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (message.source == "GEMINI") "⚡ Généré par Gemini 3.5 Flash" else "🔒 Moteur Local Analytique (Offline-First)",
+                        text = if (message.source == "GEMINI") "⚡ Généré par Gemini 2.5 Flash" else "🔒 Moteur Local Analytique (Offline-First)",
                         fontSize = 9.sp,
                         color = TextMuted
                     )

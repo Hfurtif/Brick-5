@@ -107,7 +107,7 @@ Voici le profil financier réel de l'utilisateur :
                 val adapter = moshi.adapter(GeminiRequest::class.java)
                 val jsonBody = adapter.toJson(requestPayload)
 
-                val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey"
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
                 val request = Request.Builder()
                     .url(url)
                     .post(jsonBody.toRequestBody("application/json".toMediaType()))
