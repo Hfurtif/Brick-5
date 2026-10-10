@@ -43,6 +43,9 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
     val currentScreen: StateFlow<Int> = _currentScreen.asStateFlow()
 
     // Dialogs & Modals
+    private val _addExpenseInitialMode = MutableStateFlow("DEPENSE")
+    val addExpenseInitialMode: StateFlow<String> = _addExpenseInitialMode.asStateFlow()
+
     private val _showAddExpenseDialog = MutableStateFlow(false)
     val showAddExpenseDialog: StateFlow<Boolean> = _showAddExpenseDialog.asStateFlow()
 
@@ -194,7 +197,8 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         _currentScreen.value = index
     }
 
-    fun openAddExpenseDialog() {
+    fun openAddExpenseDialog(flowMode: String = "DEPENSE") {
+        _addExpenseInitialMode.value = flowMode
         _showAddExpenseDialog.value = true
     }
 

@@ -212,6 +212,18 @@ fun OnlineStatusBadge(
     }
 }
 
+fun formatFinancialAmount(amount: Double, currency: String, hideAmounts: Boolean): String {
+    if (hideAmounts) return "•••• $currency"
+    val isCfa = currency.uppercase().contains("CFA") || currency.uppercase().contains("F")
+    return if (isCfa || amount % 1.0 == 0.0) {
+        val formatted = String.format(java.util.Locale.FRENCH, "%,d", amount.toLong()).replace('\u00A0', ' ')
+        "$formatted $currency"
+    } else {
+        val formatted = String.format(java.util.Locale.FRENCH, "%,.2f", amount).replace('\u00A0', ' ')
+        "$formatted $currency"
+    }
+}
+
 @Composable
 fun PrivacyAmountText(
     amount: Double,
@@ -220,14 +232,16 @@ fun PrivacyAmountText(
     modifier: Modifier = Modifier,
     fontSize: Int = 28,
     color: Color = TextWhite,
-    fontWeight: FontWeight = FontWeight.Bold
+    fontWeight: FontWeight = FontWeight.Bold,
+    maxLines: Int = 1
 ) {
-    val display = if (hideAmounts) "•••• $currency" else "${String.format("%,.2f", amount).replace(',', '.')} $currency"
+    val display = formatFinancialAmount(amount, currency, hideAmounts)
     Text(
         text = display,
         fontSize = fontSize.sp,
         fontWeight = fontWeight,
         color = color,
+        maxLines = maxLines,
         modifier = modifier
     )
 }

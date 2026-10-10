@@ -67,6 +67,7 @@ fun CoachAiScreen(
     isTyping: Boolean,
     isOnline: Boolean,
     onSendMessage: (String) -> Unit,
+    currency: String = "FCFA",
     modifier: Modifier = Modifier
 ) {
     var inputText by remember { mutableStateOf("") }
@@ -109,6 +110,9 @@ fun CoachAiScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        val isCfa = currency.uppercase().contains("CFA") || currency.uppercase().contains("F")
+        val samplePurchase = if (isCfa) "50 000 FCFA" else "80 $currency"
+
         // Quick prompts suggestions
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -116,7 +120,7 @@ fun CoachAiScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             QuickPromptChip("🔍 Analyse mes fuites d'argent") { onSendMessage("Analyse mes fuites d'argent") }
-            QuickPromptChip("💳 Puis-je m'offrir un achat à 80€ ?") { onSendMessage("Puis-je m'offrir un achat à 80€ ?") }
+            QuickPromptChip("💳 Puis-je m'offrir un achat à $samplePurchase ?") { onSendMessage("Puis-je m'offrir un achat à $samplePurchase ?") }
             QuickPromptChip("👑 Comment appliquer 'Se payer en premier' ?") { onSendMessage("Comment appliquer Se payer en premier ?") }
             QuickPromptChip("📊 Évalue mon budget 50/30/20") { onSendMessage("Évalue mon équilibre 50/30/20") }
         }

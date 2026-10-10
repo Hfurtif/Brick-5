@@ -7,12 +7,12 @@ import androidx.room.PrimaryKey
 data class UserProfile(
     @PrimaryKey val id: Int = 1,
     val name: String = "Alexandre",
-    val currency: String = "€",
-    val monthlySalary: Double = 2400.0,
+    val currency: String = "FCFA",
+    val monthlySalary: Double = 350000.0,
     val payDayOfMonth: Int = 28,
     val dailyReminderHour: Int = 20,
     val dailyReminderMinute: Int = 0,
-    val fixedCharges: Double = 950.0, // Loyer, charges, factures fixes
+    val fixedCharges: Double = 120000.0, // Loyer, charges, factures fixes
     val needsBudgetPercentage: Int = 50,
     val wantsBudgetPercentage: Int = 30,
     val savingsBudgetPercentage: Int = 20,

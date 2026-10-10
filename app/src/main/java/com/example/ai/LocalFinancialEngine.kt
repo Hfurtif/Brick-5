@@ -30,7 +30,11 @@ data class FinancialSnapshot(
     val scoreGrade: String,
     val scoreSummary: String,
     val detectedLeaks: List<FinancialLeak>,
-    val plainFrenchSummary: String
+    val plainFrenchSummary: String,
+    val totalBusinessInflow: Double = 0.0,
+    val totalDonations: Double = 0.0,
+    val totalBusinessInvestments: Double = 0.0,
+    val netBusinessProfit: Double = 0.0
 )
 
 data class FinancialLeak(
@@ -86,15 +90,27 @@ object LocalFinancialEngine {
         var needs = 0.0
         var wants = 0.0
         var savings = 0.0
+        var businessInflow = 0.0
+        var donations = 0.0
+        var businessInvestments = 0.0
 
         for (t in monthTransactions) {
             when (t.type.uppercase()) {
+                "ENTREE", "REVENU", "AFFAIRES_IN" -> businessInflow += t.amount
+                "DON", "DIME", "AUMONE" -> donations += t.amount
+                "INVESTISSEMENT_AFFAIRES", "STOCK", "MATERIEL_AFFAIRES" -> businessInvestments += t.amount
                 "BESOIN" -> needs += t.amount
                 "ENVIE" -> wants += t.amount
-                "EPARGNE", "ACTIF" -> savings += t.amount
+                "EPARGNE", "ACTIF", "INVESTISSEMENT" -> savings += t.amount
                 else -> {
                     // Fallback to category heuristics
-                    if (t.category in listOf("Logement", "Alimentation", "Transports", "Santé")) {
+                    if (t.category in listOf("Vente", "Commerce", "Prestation", "Chiffre d'Affaires", "Revenu", "Salaire", "Affaires")) {
+                        businessInflow += t.amount
+                    } else if (t.category in listOf("Don", "Dîme", "Charité", "Solidarité", "Aumône")) {
+                        donations += t.amount
+                    } else if (t.category in listOf("Stock", "Marchandise", "Matériel Pro", "Investissement Business")) {
+                        businessInvestments += t.amount
+                    } else if (t.category in listOf("Logement", "Alimentation", "Transports", "Santé")) {
                         needs += t.amount
                     } else if (t.category in listOf("Investissement", "Épargne")) {
                         savings += t.amount
@@ -105,19 +121,22 @@ object LocalFinancialEngine {
             }
         }
 
-        val totalExpenses = needs + wants
-        val remainingBudget = income - totalExpenses - savings
+        val totalIncome = income + businessInflow
+        val totalExpenses = needs + wants + donations
+        val totalAllocatedCapital = savings + businessInvestments
+        val remainingBudget = totalIncome - totalExpenses - totalAllocatedCapital
         val dailyAllowance = max(0.0, remainingBudget / remainingDays)
+        val netBusinessProfit = businessInflow - businessInvestments
 
-        // 50/30/20 Targets
-        val needsTarget = income * (user.needsBudgetPercentage / 100.0)
-        val wantsTarget = income * (user.wantsBudgetPercentage / 100.0)
-        val savingsTarget = income * (user.savingsBudgetPercentage / 100.0)
+        // 50/30/20 Targets (based on total incoming funds)
+        val needsTarget = totalIncome * (user.needsBudgetPercentage / 100.0)
+        val wantsTarget = totalIncome * (user.wantsBudgetPercentage / 100.0)
+        val savingsTarget = totalIncome * (user.savingsBudgetPercentage / 100.0)
 
-        val totalTracked = max(1.0, totalExpenses + savings)
+        val totalTracked = max(1.0, totalExpenses + totalAllocatedCapital)
         val needsPct = ((needs / totalTracked) * 100).roundToInt()
         val wantsPct = ((wants / totalTracked) * 100).roundToInt()
-        val savingsPct = ((savings / totalTracked) * 100).roundToInt()
+        val savingsPct = (((savings + businessInvestments) / totalTracked) * 100).roundToInt()
 
         // Projection
         val dailyBurn = if (currentDay > 0) (totalExpenses / currentDay) else 0.0
@@ -192,7 +211,7 @@ object LocalFinancialEngine {
                 FinancialLeak(
                     title = "Accumulation d'abonnements",
                     amount = sumSubs,
-                    impactText = "${subscriptions.size} abonnements actifs détectés (${sumSubs.roundToInt()} €/mois).",
+                    impactText = "${subscriptions.size} abonnements actifs détectés (${sumSubs.roundToInt()} ${user.currency}/mois).",
                     adviceText = "Résilie les services non utilisés depuis plus de 30 jours (loi du Père Riche : coupe les passifs invisibles)."
                 )
             )
@@ -203,7 +222,7 @@ object LocalFinancialEngine {
                 FinancialLeak(
                     title = "Dépassement du quota Envies (30%)",
                     amount = wants - wantsTarget,
-                    impactText = "Tu as dépensé ${(wants).roundToInt()} € en envies pour un plafond de ${wantsTarget.roundToInt()} €.",
+                    impactText = "Tu as dépensé ${(wants).roundToInt()} ${user.currency} en envies pour un plafond de ${wantsTarget.roundToInt()} ${user.currency}.",
                     adviceText = "Bascule en mode 'Bunker' sur les sorties et le shopping jusqu'à ta prochaine paie."
                 )
             )
@@ -229,7 +248,7 @@ object LocalFinancialEngine {
         }
 
         return FinancialSnapshot(
-            monthlyIncome = income,
+            monthlyIncome = totalIncome,
             totalExpenses = totalExpenses,
             needsSpent = needs,
             wantsSpent = wants,
@@ -249,7 +268,11 @@ object LocalFinancialEngine {
             scoreGrade = grade,
             scoreSummary = summary,
             detectedLeaks = leaks,
-            plainFrenchSummary = plainFrench
+            plainFrenchSummary = plainFrench,
+            totalBusinessInflow = businessInflow,
+            totalDonations = donations,
+            totalBusinessInvestments = businessInvestments,
+            netBusinessProfit = netBusinessProfit
         )
     }
 

@@ -52,8 +52,11 @@ import com.example.ui.theme.BrickBackground
 import com.example.ui.theme.BrickSurface
 import com.example.ui.theme.BrickSurfaceBorder
 import com.example.ui.theme.BrickSurfaceElevated
+import com.example.ui.theme.CyberGold
 import com.example.ui.theme.ElectricCyan
+import com.example.ui.theme.EmeraldSuccess
 import com.example.ui.theme.NeedColor
+import com.example.ui.theme.NeonViolet
 import com.example.ui.theme.NeonVioletGlow
 import com.example.ui.theme.SaveColor
 import com.example.ui.theme.TextMuted
@@ -65,17 +68,28 @@ import java.util.Locale
 @Composable
 fun AddExpenseDialog(
     currency: String,
+    initialFlowType: String = "DEPENSE",
     onDismiss: () -> Unit,
     onConfirm: (title: String, amount: Double, category: String, type: String, priority: String, note: String) -> Unit
 ) {
+    var flowType by remember { mutableStateOf(initialFlowType) } // DEPENSE, ENTREE, INVESTISSEMENT, DON
     var amountStr by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Alimentation") }
+    var selectedCategory by remember {
+        mutableStateOf(
+            when (initialFlowType) {
+                "ENTREE" -> "Vente & Commerce"
+                "INVESTISSEMENT" -> "Achat Stock & Marchandise"
+                "DON" -> "Dîme (10%)"
+                else -> "Alimentation"
+            }
+        )
+    }
     var selectedType by remember { mutableStateOf("BESOIN") }
     var selectedPriority by remember { mutableStateOf("UTILE") }
     var note by remember { mutableStateOf("") }
 
-    val categories = listOf(
+    val expenseCategories = listOf(
         "Alimentation" to "🛒",
         "Logement" to "🏠",
         "Transports" to "🚗",
@@ -83,9 +97,39 @@ fun AddExpenseDialog(
         "Shopping" to "🛍️",
         "Abonnements" to "📱",
         "Santé" to "💊",
-        "Investissement" to "📈",
         "Autre" to "💡"
     )
+
+    val inflowCategories = listOf(
+        "Vente & Commerce" to "📦",
+        "Prestation & Contrat" to "💼",
+        "Bénéfice d'Affaires" to "📈",
+        "Commission & Bonus" to "💰",
+        "Salaire / Paie" to "💵",
+        "Entrée Diverse" to "⚡"
+    )
+
+    val investCategories = listOf(
+        "Achat Stock & Marchandise" to "📦",
+        "Outils & Matériel Pro" to "⚙️",
+        "Marketing & Publicité" to "📢",
+        "Capital & Associés" to "🏢",
+        "Formation & Savoir" to "📚"
+    )
+
+    val donCategories = listOf(
+        "Dîme (10%)" to "🕊️",
+        "Aumône & Charité" to "🤲",
+        "Soutien Famille & Proches" to "👨‍👩‍👧",
+        "Don Communautaire" to "🤝"
+    )
+
+    val activeCategories = when (flowType) {
+        "ENTREE" -> inflowCategories
+        "INVESTISSEMENT" -> investCategories
+        "DON" -> donCategories
+        else -> expenseCategories
+    }
 
     // Voice recognition launcher
     val speechLauncher = rememberLauncherForActivityResult(
@@ -94,19 +138,28 @@ fun AddExpenseDialog(
         if (result.resultCode == Activity.RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
             if (!spokenText.isNullOrBlank()) {
-                // Parse spoken input, e.g. "45 euros restaurant" or "courses 60"
                 val numberRegex = "\\b(\\d+[.,]?\\d*)\\b".toRegex()
                 val match = numberRegex.find(spokenText)
                 if (match != null) {
                     amountStr = match.value.replace(',', '.')
                 }
                 title = spokenText.replace(numberRegex, "").replace("euros", "").replace("euro", "").trim().replaceFirstChar { it.uppercase() }
-                if (spokenText.contains("resto", ignoreCase = true) || spokenText.contains("bar", ignoreCase = true)) {
+
+                // Heuristic detection for business flow keywords
+                val lower = spokenText.lowercase()
+                if (lower.contains("vente") || lower.contains("client") || lower.contains("contrat") || lower.contains("chiffre")) {
+                    flowType = "ENTREE"
+                    selectedCategory = "Vente & Commerce"
+                } else if (lower.contains("stock") || lower.contains("marchandise") || lower.contains("matériel") || lower.contains("outil")) {
+                    flowType = "INVESTISSEMENT"
+                    selectedCategory = "Achat Stock & Marchandise"
+                } else if (lower.contains("don") || lower.contains("dime") || lower.contains("dîme") || lower.contains("aumône")) {
+                    flowType = "DON"
+                    selectedCategory = "Dîme (10%)"
+                } else if (lower.contains("resto") || lower.contains("bar") || lower.contains("sortir")) {
+                    flowType = "DEPENSE"
                     selectedCategory = "Sorties & Loisirs"
                     selectedType = "ENVIE"
-                } else if (spokenText.contains("course", ignoreCase = true) || spokenText.contains("manger", ignoreCase = true)) {
-                    selectedCategory = "Alimentation"
-                    selectedType = "BESOIN"
                 }
             }
         }
@@ -123,8 +176,13 @@ fun AddExpenseDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Nouvelle Dépense",
-                    fontSize = 18.sp,
+                    text = when (flowType) {
+                        "ENTREE" -> "💰 Entrée / Ventes"
+                        "INVESTISSEMENT" -> "📦 Investissement Business"
+                        "DON" -> "🕊️ Don & Dîme"
+                        else -> "💸 Nouvelle Dépense"
+                    },
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextWhite
                 )
@@ -134,7 +192,7 @@ fun AddExpenseDialog(
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.FRENCH.toString())
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Dis par exemple : '45 euros restaurant'")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Dis par exemple : 'vente 45' ou 'don 20' ou 'courses 60'")
                         }
                         try {
                             speechLauncher.launch(intent)
@@ -160,8 +218,54 @@ fun AddExpenseDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Flow Type Switcher Tabs (Dépense, Entrée, Invest, Don)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf(
+                        "DEPENSE" to "Dépense",
+                        "ENTREE" to "Entrée (+)",
+                        "INVESTISSEMENT" to "Invest. (📦)",
+                        "DON" to "Don (🕊️)"
+                    ).forEach { (fType, label) ->
+                        val isSelected = flowType == fType
+                        val color = when (fType) {
+                            "ENTREE" -> EmeraldSuccess
+                            "INVESTISSEMENT" -> NeonVioletGlow
+                            "DON" -> CyberGold
+                            else -> ElectricCyan
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) color else BrickSurface)
+                                .border(1.dp, if (isSelected) color else BrickSurfaceBorder, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    flowType = fType
+                                    selectedCategory = when (fType) {
+                                        "ENTREE" -> "Vente & Commerce"
+                                        "INVESTISSEMENT" -> "Achat Stock & Marchandise"
+                                        "DON" -> "Dîme (10%)"
+                                        else -> "Alimentation"
+                                    }
+                                }
+                                .padding(vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                color = if (isSelected) BrickBackground else TextMuted
+                            )
+                        }
+                    }
+                }
+
                 // Amount Field
                 OutlinedTextField(
                     value = amountStr,
@@ -171,7 +275,12 @@ fun AddExpenseDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextWhite,
                         unfocusedTextColor = TextWhite,
-                        focusedBorderColor = ElectricCyan,
+                        focusedBorderColor = when (flowType) {
+                            "ENTREE" -> EmeraldSuccess
+                            "INVESTISSEMENT" -> NeonVioletGlow
+                            "DON" -> CyberGold
+                            else -> ElectricCyan
+                        },
                         unfocusedBorderColor = BrickSurfaceBorder
                     ),
                     modifier = Modifier
@@ -179,11 +288,20 @@ fun AddExpenseDialog(
                         .testTag("expense_amount_input")
                 )
 
-                // Title
+                // Description Field
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Description (ex: Supermarché, Resto)") },
+                    label = {
+                        Text(
+                            when (flowType) {
+                                "ENTREE" -> "Description (ex: Vente boutique, Client X)"
+                                "INVESTISSEMENT" -> "Description (ex: Achat cartons stock)"
+                                "DON" -> "Description (ex: Dîme dimanche, Aumône)"
+                                else -> "Description (ex: Supermarché, Resto)"
+                            }
+                        )
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextWhite,
                         unfocusedTextColor = TextWhite,
@@ -195,47 +313,54 @@ fun AddExpenseDialog(
                         .testTag("expense_title_input")
                 )
 
-                // Type Toggle (50/30/20)
-                Text(
-                    text = "Type (Règle 50 / 30 / 20) :",
-                    fontSize = 11.sp,
-                    color = TextMuted,
-                    fontWeight = FontWeight.SemiBold
-                )
+                // Sub-type selector (Only for Dépenses standard 50/30/20)
+                if (flowType == "DEPENSE") {
+                    Text(
+                        text = "Classification Dépense :",
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    TypePill(
-                        label = "Besoin (50%)",
-                        color = NeedColor,
-                        isSelected = selectedType == "BESOIN",
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        selectedType = "BESOIN"
-                    }
-                    TypePill(
-                        label = "Envie (30%)",
-                        color = WantColor,
-                        isSelected = selectedType == "ENVIE",
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        selectedType = "ENVIE"
-                    }
-                    TypePill(
-                        label = "Épargne (20%)",
-                        color = SaveColor,
-                        isSelected = selectedType == "EPARGNE",
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        selectedType = "EPARGNE"
+                        TypePill(
+                            label = "Besoin (50%)",
+                            color = NeedColor,
+                            isSelected = selectedType == "BESOIN",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            selectedType = "BESOIN"
+                        }
+                        TypePill(
+                            label = "Envie (30%)",
+                            color = WantColor,
+                            isSelected = selectedType == "ENVIE",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            selectedType = "ENVIE"
+                        }
+                        TypePill(
+                            label = "Épargne (20%)",
+                            color = SaveColor,
+                            isSelected = selectedType == "EPARGNE",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            selectedType = "EPARGNE"
+                        }
                     }
                 }
 
                 // Category Chips
                 Text(
-                    text = "Catégorie :",
+                    text = when (flowType) {
+                        "ENTREE" -> "Source de revenu / commerce :"
+                        "INVESTISSEMENT" -> "Type d'investissement d'affaires :"
+                        "DON" -> "Bénéficiaire du don :"
+                        else -> "Catégorie :"
+                    },
                     fontSize = 11.sp,
                     color = TextMuted,
                     fontWeight = FontWeight.SemiBold
@@ -245,25 +370,31 @@ fun AddExpenseDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    categories.forEach { (cat, emoji) ->
+                    activeCategories.forEach { (cat, emoji) ->
                         val isSelected = selectedCategory == cat
+                        val activeHighlight = when (flowType) {
+                            "ENTREE" -> EmeraldSuccess
+                            "INVESTISSEMENT" -> NeonVioletGlow
+                            "DON" -> CyberGold
+                            else -> ElectricCyan
+                        }
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) ElectricCyan else BrickSurface)
+                                .background(if (isSelected) activeHighlight else BrickSurface)
                                 .border(
                                     1.dp,
-                                    if (isSelected) ElectricCyan else BrickSurfaceBorder,
+                                    if (isSelected) activeHighlight else BrickSurfaceBorder,
                                     RoundedCornerShape(10.dp)
                                 )
                                 .clickable {
                                     selectedCategory = cat
-                                    if (cat in listOf("Sorties & Loisirs", "Shopping")) {
-                                        selectedType = "ENVIE"
-                                    } else if (cat in listOf("Logement", "Alimentation", "Transports", "Santé")) {
-                                        selectedType = "BESOIN"
-                                    } else if (cat == "Investissement") {
-                                        selectedType = "EPARGNE"
+                                    if (flowType == "DEPENSE") {
+                                        if (cat in listOf("Sorties & Loisirs", "Shopping")) {
+                                            selectedType = "ENVIE"
+                                        } else if (cat in listOf("Logement", "Alimentation", "Transports", "Santé")) {
+                                            selectedType = "BESOIN"
+                                        }
                                     }
                                 }
                                 .padding(horizontal = 8.dp, vertical = 6.dp)
@@ -278,39 +409,41 @@ fun AddExpenseDialog(
                     }
                 }
 
-                // Priority Selection
-                Text(
-                    text = "Niveau de priorité :",
-                    fontSize = 11.sp,
-                    color = TextMuted,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf("ESSENTIEL", "UTILE", "SUPERFLU").forEach { prio ->
-                        val isSelected = selectedPriority == prio
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) NeonVioletGlow.copy(alpha = 0.3f) else BrickSurface)
-                                .border(
-                                    1.dp,
-                                    if (isSelected) NeonVioletGlow else BrickSurfaceBorder,
-                                    RoundedCornerShape(8.dp)
+                // Priority Selection (Optional note)
+                if (flowType == "DEPENSE") {
+                    Text(
+                        text = "Priorité :",
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("ESSENTIEL", "UTILE", "SUPERFLU").forEach { prio ->
+                            val isSelected = selectedPriority == prio
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) NeonVioletGlow.copy(alpha = 0.3f) else BrickSurface)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) NeonVioletGlow else BrickSurfaceBorder,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { selectedPriority = prio }
+                                    .padding(vertical = 5.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = prio.lowercase().replaceFirstChar { it.uppercase() },
+                                    fontSize = 10.sp,
+                                    color = if (isSelected) TextWhite else TextMuted,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
-                                .clickable { selectedPriority = prio }
-                                .padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = prio.lowercase().replaceFirstChar { it.uppercase() },
-                                fontSize = 11.sp,
-                                color = if (isSelected) TextWhite else TextMuted,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
+                            }
                         }
                     }
                 }
@@ -321,22 +454,46 @@ fun AddExpenseDialog(
                 onClick = {
                     val amount = amountStr.replace(',', '.').toDoubleOrNull() ?: 0.0
                     if (amount > 0.0) {
+                        val computedType = when (flowType) {
+                            "ENTREE" -> "ENTREE"
+                            "INVESTISSEMENT" -> "INVESTISSEMENT_AFFAIRES"
+                            "DON" -> "DON"
+                            else -> selectedType
+                        }
+                        val computedPriority = when (flowType) {
+                            "ENTREE", "INVESTISSEMENT" -> "ESSENTIEL"
+                            "DON" -> "UTILE"
+                            else -> selectedPriority
+                        }
+
                         onConfirm(
                             title.ifBlank { selectedCategory },
                             amount,
                             selectedCategory,
-                            selectedType,
-                            selectedPriority,
+                            computedType,
+                            computedPriority,
                             note
                         )
                     }
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = when (flowType) {
+                        "ENTREE" -> EmeraldSuccess
+                        "INVESTISSEMENT" -> NeonViolet
+                        "DON" -> CyberGold
+                        else -> ElectricCyan
+                    }
+                ),
                 modifier = Modifier.testTag("confirm_add_expense_btn")
             ) {
                 Text(
-                    text = "Ajouter la dépense",
+                    text = when (flowType) {
+                        "ENTREE" -> "Enregistrer l'Entrée (+)"
+                        "INVESTISSEMENT" -> "Enregistrer l'Investissement"
+                        "DON" -> "Enregistrer le Don"
+                        else -> "Ajouter la Dépense"
+                    },
                     color = BrickBackground,
                     fontWeight = FontWeight.Bold
                 )

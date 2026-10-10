@@ -240,6 +240,34 @@ fun ProfileSecurityScreen(
                         )
                     }
 
+                    // Quick currency selection chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("FCFA", "€", "$", "CHF", "£").forEach { cur ->
+                            val isSel = currency.trim().equals(cur, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(34.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) ElectricCyan else BrickSurfaceElevated)
+                                    .border(1.dp, if (isSel) ElectricCyan else BrickSurfaceBorder, RoundedCornerShape(8.dp))
+                                    .clickable { currency = cur },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = cur,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSel) BrickBackground else TextWhite,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
                             value = payDayStr,

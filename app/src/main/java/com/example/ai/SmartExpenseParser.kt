@@ -65,6 +65,33 @@ object SmartExpenseParser {
     private fun inferCategoryAndType(title: String, amount: Double): Triple<String, String, String> {
         val lower = title.lowercase()
 
+        // 0. Business, Commerce & Inflow (Pour ceux qui font des affaires)
+        if (lower.containsAny(
+                "vente", "client", "prestation", "chiffre", "recette", "commerce", "boutique",
+                "service", "affaires", "facturation", "contrat", "honoraire", "versement", "bénéfice"
+            )
+        ) {
+            return Triple("Vente & Commerce", "ENTREE", "ESSENTIEL")
+        }
+
+        // 0.1 Stock & Business Investments (Investissements d'affaires)
+        if (lower.containsAny(
+                "stock", "marchandise", "fournisseur", "matériel", "materiel", "outils",
+                "outil", "colis pro", "achat gros", "réassort", "reassort"
+            )
+        ) {
+            return Triple("Achat Stock & Marchandise", "INVESTISSEMENT_AFFAIRES", "ESSENTIEL")
+        }
+
+        // 0.2 Dons, Dîmes & Solidarité
+        if (lower.containsAny(
+                "don", "dime", "dîme", "aumone", "aumône", "charite", "charité",
+                "solidarite", "solidarité", "eglise", "église", "mosquee", "mosquée", "orphelinat"
+            )
+        ) {
+            return Triple("Dîme (10%)", "DON", "UTILE")
+        }
+
         // 1. Food / Alimentation (Essential need)
         if (lower.containsAny(
                 "piment", "pain", "riz", "viande", "tomate", "oignon", "poisson", "fruit",

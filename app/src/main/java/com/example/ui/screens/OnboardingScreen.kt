@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,31 +81,52 @@ fun OnboardingScreen(
     var reminderHourStr by remember { mutableStateOf(initialUser.dailyReminderHour.toString()) }
     var fixedChargesStr by remember { mutableStateOf(initialUser.fixedCharges.toInt().toString()) }
 
+    val handleNext: () -> Unit = {
+        if (step < 4) {
+            step++
+        } else {
+            val sal = monthlySalaryStr.toDoubleOrNull() ?: 2500.0
+            val pd = payDayStr.toIntOrNull() ?: 28
+            val rh = reminderHourStr.toIntOrNull() ?: 20
+            val fc = fixedChargesStr.toDoubleOrNull() ?: 950.0
+            onComplete(
+                initialUser.copy(
+                    name = name.ifBlank { "Alexandre" },
+                    currency = currency.ifBlank { "FCFA" },
+                    monthlySalary = sal,
+                    payDayOfMonth = pd,
+                    dailyReminderHour = rh,
+                    fixedCharges = fc,
+                    isOnboarded = true
+                )
+            )
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(BrickBackground)
             .systemBarsPadding()
             .imePadding()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Header
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
         ) {
-            BrickLogo(size = 46.dp, showText = true)
-            Spacer(modifier = Modifier.height(12.dp))
+            BrickLogo(size = 42.dp, showText = true)
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Step Indicator Dots
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (1..4).forEach { i ->
                     Box(
                         modifier = Modifier
-                            .size(if (i == step) 28.dp else 10.dp, 10.dp)
-                            .clip(RoundedCornerShape(5.dp))
+                            .size(if (i == step) 28.dp else 10.dp, 8.dp)
+                            .clip(RoundedCornerShape(4.dp))
                             .background(
                                 if (i == step) ElectricCyan
                                 else if (i < step) EmeraldSuccess
@@ -113,7 +137,7 @@ fun OnboardingScreen(
             }
         }
 
-        // Animated Content per Step (Scrollable so fields and buttons remain visible with keyboard)
+        // Scrollable Content per Step with Continue button directly inside the view
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -131,98 +155,48 @@ fun OnboardingScreen(
                         name = name,
                         onNameChange = { name = it },
                         currency = currency,
-                        onCurrencyChange = { currency = it }
+                        onCurrencyChange = { currency = it },
+                        onNext = handleNext
                     )
                     2 -> StepTwo(
                         salary = monthlySalaryStr,
                         onSalaryChange = { monthlySalaryStr = it },
                         payDay = payDayStr,
                         onPayDayChange = { payDayStr = it },
-                        currency = currency
+                        currency = currency,
+                        onBack = {
+                            if (step > 1) {
+                                step--
+                            }
+                        },
+                        onNext = handleNext
                     )
                     3 -> StepThree(
                         fixedCharges = fixedChargesStr,
                         onFixedChargesChange = { fixedChargesStr = it },
                         reminderHour = reminderHourStr,
                         onReminderHourChange = { reminderHourStr = it },
-                        currency = currency
+                        currency = currency,
+                        onBack = {
+                            if (step > 1) {
+                                step--
+                            }
+                        },
+                        onNext = handleNext
                     )
                     4 -> StepFour(
                         name = name,
                         salary = monthlySalaryStr.toDoubleOrNull() ?: 2400.0,
                         fixedCharges = fixedChargesStr.toDoubleOrNull() ?: 950.0,
-                        currency = currency
+                        currency = currency,
+                        onBack = {
+                            if (step > 1) {
+                                step--
+                            }
+                        },
+                        onComplete = handleNext
                     )
                 }
-            }
-        }
-
-        // Navigation bottom bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (step > 1) {
-                IconButton(
-                    onClick = { step-- },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(BrickSurfaceElevated)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Précédent",
-                        tint = TextWhite
-                    )
-                }
-            } else {
-                Spacer(modifier = Modifier.width(48.dp))
-            }
-
-            Button(
-                onClick = {
-                    if (step < 4) {
-                        step++
-                    } else {
-                        val sal = monthlySalaryStr.toDoubleOrNull() ?: 2500.0
-                        val pd = payDayStr.toIntOrNull() ?: 28
-                        val rh = reminderHourStr.toIntOrNull() ?: 20
-                        val fc = fixedChargesStr.toDoubleOrNull() ?: 950.0
-                        onComplete(
-                            initialUser.copy(
-                                name = name.ifBlank { "Alexandre" },
-                                currency = currency.ifBlank { "€" },
-                                monthlySalary = sal,
-                                payDayOfMonth = pd,
-                                dailyReminderHour = rh,
-                                fixedCharges = fc,
-                                isOnboarded = true
-                            )
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .height(50.dp)
-                    .testTag("onboarding_next_btn"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
-            ) {
-                Text(
-                    text = if (step < 4) "Continuer" else "Bâtir mes fondations",
-                    color = BrickBackground,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = if (step < 4) Icons.AutoMirrored.Filled.ArrowForward else Icons.Default.Check,
-                    contentDescription = null,
-                    tint = BrickBackground
-                )
             }
         }
     }
@@ -233,34 +207,38 @@ private fun StepOne(
     name: String,
     onNameChange: (String) -> Unit,
     currency: String,
-    onCurrencyChange: (String) -> Unit
+    onCurrencyChange: (String) -> Unit,
+    onNext: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Bienvenue sur BRICK",
-            fontSize = 24.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.ExtraBold,
             color = TextWhite
         )
         Text(
-            text = "Pour ceux qui ne savent pas gérer leur argent et dépensent sans contrôle. Posons ta première brique.",
+            text = "L'application pour stopper les dépenses compulsives et bâtir tes fondations financières solides.",
             fontSize = 13.sp,
             color = TextMuted,
             lineHeight = 18.sp
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
             label = { Text("Comment t'appelles-tu ?") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onNext() }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
@@ -280,29 +258,55 @@ private fun StepOne(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("€", "$", "FCFA", "CHF", "£").forEach { cur ->
+            listOf("FCFA", "€", "$", "CHF", "£").forEach { cur ->
                 val isSel = currency == cur
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .height(42.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(if (isSel) ElectricCyan else BrickSurfaceElevated)
                         .border(1.dp, if (isSel) ElectricCyan else BrickSurfaceBorder, RoundedCornerShape(10.dp))
-                        .padding(vertical = 10.dp),
+                        .clickable { onCurrencyChange(cur) },
                     contentAlignment = Alignment.Center
                 ) {
-                    androidx.compose.material3.TextButton(onClick = { onCurrencyChange(cur) }) {
-                        Text(
-                            text = cur,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSel) BrickBackground else TextWhite
-                        )
-                    }
+                    Text(
+                        text = cur,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSel) BrickBackground else TextWhite,
+                        maxLines = 1
+                    )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Direct Continue Button moved up right below fields
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .testTag("onboarding_next_btn"),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
+        ) {
+            Text(
+                text = "Continuer",
+                color = BrickBackground,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = BrickBackground
+            )
         }
     }
 }
@@ -313,22 +317,24 @@ private fun StepTwo(
     onSalaryChange: (String) -> Unit,
     payDay: String,
     onPayDayChange: (String) -> Unit,
-    currency: String
+    currency: String,
+    onBack: () -> Unit,
+    onNext: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
             text = "Tes Revenus Réguliers",
-            fontSize = 22.sp,
+            fontSize = 21.sp,
             fontWeight = FontWeight.Bold,
             color = TextWhite
         )
         Text(
-            text = "Le point de départ de ta liberté financière. Combien rentre chaque mois dans ta poche ?",
+            text = "Combien rentre chaque mois dans ta poche ? C'est la base pour calculer ton Reste à Vivre.",
             fontSize = 13.sp,
             color = TextMuted,
             lineHeight = 18.sp
@@ -338,7 +344,8 @@ private fun StepTwo(
             value = salary,
             onValueChange = onSalaryChange,
             label = { Text("Salaire mensuel net ($currency)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
@@ -352,7 +359,9 @@ private fun StepTwo(
             value = payDay,
             onValueChange = onPayDayChange,
             label = { Text("Jour du virement de la paie (1 - 31)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onNext() }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
@@ -361,6 +370,52 @@ private fun StepTwo(
             ),
             modifier = Modifier.fillMaxWidth().testTag("onboard_payday_input")
         )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Direct Buttons Row moved up
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(BrickSurfaceElevated)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Précédent",
+                    tint = TextWhite
+                )
+            }
+
+            Button(
+                onClick = onNext,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp)
+                    .testTag("onboarding_next_btn"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
+            ) {
+                Text(
+                    text = "Continuer",
+                    color = BrickBackground,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = BrickBackground
+                )
+            }
+        }
     }
 }
 
@@ -370,22 +425,24 @@ private fun StepThree(
     onFixedChargesChange: (String) -> Unit,
     reminderHour: String,
     onReminderHourChange: (String) -> Unit,
-    currency: String
+    currency: String,
+    onBack: () -> Unit,
+    onNext: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
             text = "Charges & Rappel Quotidien",
-            fontSize = 22.sp,
+            fontSize = 21.sp,
             fontWeight = FontWeight.Bold,
             color = TextWhite
         )
         Text(
-            text = "Loyer, courses, électricité, abonnements… et l'heure à laquelle BRICK te rappelle de noter tes dépenses.",
+            text = "Loyer, factures, électricité, abonnements… et l'heure du rappel quotidien chaque soir.",
             fontSize = 13.sp,
             color = TextMuted,
             lineHeight = 18.sp
@@ -395,7 +452,8 @@ private fun StepThree(
             value = fixedCharges,
             onValueChange = onFixedChargesChange,
             label = { Text("Total des charges fixes mensuelles ($currency)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
@@ -409,7 +467,9 @@ private fun StepThree(
             value = reminderHour,
             onValueChange = onReminderHourChange,
             label = { Text("Heure du rappel chaque soir (ex: 20 pour 20h)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onNext() }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
@@ -418,6 +478,52 @@ private fun StepThree(
             ),
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Direct Buttons Row moved up
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(BrickSurfaceElevated)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Précédent",
+                    tint = TextWhite
+                )
+            }
+
+            Button(
+                onClick = onNext,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp)
+                    .testTag("onboarding_next_btn"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
+            ) {
+                Text(
+                    text = "Continuer",
+                    color = BrickBackground,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = BrickBackground
+                )
+            }
+        }
     }
 }
 
@@ -426,7 +532,9 @@ private fun StepFour(
     name: String,
     salary: Double,
     fixedCharges: Double,
-    currency: String
+    currency: String,
+    onBack: () -> Unit,
+    onComplete: () -> Unit
 ) {
     val needsTarget = salary * 0.50
     val wantsTarget = salary * 0.30
@@ -435,17 +543,17 @@ private fun StepFour(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 20.dp),
+            .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
             text = "Ton Plan 50 / 30 / 20 est Prêt !",
-            fontSize = 22.sp,
+            fontSize = 21.sp,
             fontWeight = FontWeight.Bold,
             color = CyberGold
         )
         Text(
-            text = "$name, voici ton nouveau cadre de vie financière :",
+            text = "$name, voici ton nouveau cadre de liberté financière :",
             fontSize = 13.sp,
             color = TextMuted
         )
@@ -460,10 +568,56 @@ private fun StepFour(
 
         Text(
             text = "💡 'Ce n'est pas combien tu gagnes qui compte, c'est combien tu gardes et comment cet argent travaille pour toi.' — Robert Kiyosaki",
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             color = TextMuted,
             lineHeight = 16.sp
         )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Complete Button Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(BrickSurfaceElevated)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Précédent",
+                    tint = TextWhite
+                )
+            }
+
+            Button(
+                onClick = onComplete,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp)
+                    .testTag("onboarding_next_btn"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
+            ) {
+                Text(
+                    text = "Bâtir mes fondations",
+                    color = BrickBackground,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = BrickBackground
+                )
+            }
+        }
     }
 }
 

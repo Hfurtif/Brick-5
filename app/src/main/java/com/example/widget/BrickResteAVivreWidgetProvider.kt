@@ -61,23 +61,30 @@ class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
             val todaySpent = todayTxs.sumOf { it.amount }
 
             val totalDaysInMonth = max(1, Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH))
-            val monthlySalary = user?.monthlySalary ?: 2400.0
-            val fixedCharges = user?.fixedCharges ?: 950.0
-            val currency = user?.currency ?: "€"
+            val monthlySalary = user?.monthlySalary ?: 350000.0
+            val fixedCharges = user?.fixedCharges ?: 120000.0
+            val currency = user?.currency ?: "FCFA"
 
             // Daily quota available for discretionary spend
             val availableMonthly = max(0.0, monthlySalary - fixedCharges)
             val dailyBudget = availableMonthly / totalDaysInMonth
             val resteAVivre = dailyBudget - todaySpent
+            val isCfa = currency.uppercase().contains("CFA") || currency.uppercase().contains("F")
 
             for (widgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_reste_a_vivre)
+
+                val formattedReste = if (isCfa || resteAVivre % 1.0 == 0.0) {
+                    "${resteAVivre.toLong()} $currency"
+                } else {
+                    String.format(Locale.FRENCH, "%.1f %s", resteAVivre, currency)
+                }
 
                 // Formatting Reste à vivre text and status
                 val (amountText, amountColor, statusText, statusColor) = when {
                     resteAVivre >= dailyBudget * 0.4 -> {
                         Tuple4(
-                            String.format(Locale.getDefault(), "+%.1f %s", resteAVivre, currency),
+                            "+$formattedReste",
                             Color.parseColor("#38BDF8"), // Cyan
                             "🛡️ Dans les clous",
                             Color.parseColor("#10B981") // Green
@@ -85,7 +92,7 @@ class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
                     }
                     resteAVivre >= 0 -> {
                         Tuple4(
-                            String.format(Locale.getDefault(), "+%.1f %s", resteAVivre, currency),
+                            "+$formattedReste",
                             Color.parseColor("#F59E0B"), // Amber
                             "⚠️ Limite proche",
                             Color.parseColor("#F59E0B")
@@ -93,7 +100,7 @@ class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
                     }
                     else -> {
                         Tuple4(
-                            String.format(Locale.getDefault(), "%.1f %s", resteAVivre, currency),
+                            formattedReste,
                             Color.parseColor("#EF4444"), // Red
                             "🚨 Quota dépassé",
                             Color.parseColor("#EF4444")

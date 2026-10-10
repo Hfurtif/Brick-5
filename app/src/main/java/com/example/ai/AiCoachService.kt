@@ -183,16 +183,17 @@ Voici le profil financier réel de l'utilisateur :
 
             q.contains("payer en premier") || q.contains("epargne") || q.contains("investir") -> {
                 "👑 Principe 'Se payer en premier' :\n" +
-                        "La plupart des gens paient leur loyer, leurs factures, leurs restos, et épargnent ce qu'il reste (souvent 0 €).\n" +
-                        "L'investisseur fait l'inverse : dès que ton salaire de ${user.monthlySalary.toInt()} ${user.currency} arrive, vire immédiatement ${snapshot.savingsTarget.toInt()} ${user.currency} (20%) sur tes actifs (Livret A, PEA, compte d'investissement). Ensuite seulement, tu vis avec le reste."
+                        "La plupart des gens paient leur loyer, leurs factures, leurs restos, et épargnent ce qu'il reste (souvent 0 ${user.currency}).\n" +
+                        "L'investisseur fait l'inverse : dès que ton salaire de ${user.monthlySalary.toInt()} ${user.currency} arrive, vire immédiatement ${snapshot.savingsTarget.toInt()} ${user.currency} (20%) sur tes actifs (compte d'épargne, investissement, stock). Ensuite seulement, tu vis avec le reste."
             }
 
             else -> {
+                val sampleAmount = if (user.currency == "FCFA") "50 000 FCFA" else "80 ${user.currency}"
                 "🧱 Analyse de ta situation actuelle :\n" +
                         "• Reste à vivre : ${snapshot.remainingBudget.toInt()} ${user.currency} (${snapshot.dailyAllowanceRemaining.toInt()} ${user.currency}/jour).\n" +
                         "• Score BRICK : ${snapshot.healthScore}/100 (${snapshot.scoreGrade}).\n\n" +
                         "${snapshot.plainFrenchSummary}\n\n" +
-                        "Pose-moi une question précise : 'Analyse mes fuites', 'Puis-je m'offrir un achat à 80€ ?' ou 'Comment appliquer Se payer en premier ?'."
+                        "Pose-moi une question précise : 'Analyse mes fuites', 'Puis-je m'offrir un achat à $sampleAmount ?' ou 'Comment appliquer Se payer en premier ?'."
             }
         }
     }

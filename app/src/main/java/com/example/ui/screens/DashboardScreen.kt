@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -88,6 +89,8 @@ fun DashboardScreen(
     onOpenAddExpense: () -> Unit,
     onOpenEveningRecap: () -> Unit,
     onOpenSimulator: () -> Unit,
+    onOpenBusinessHub: () -> Unit = {},
+    onOpenAddFlow: (String) -> Unit = {},
     onDeleteTransaction: (TransactionEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -138,23 +141,13 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "RESTE À VIVRE (CE MOIS)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (snapshot.isOverBudget) CoralDanger else ElectricCyan,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            PrivacyAmountText(
-                                amount = snapshot.remainingBudget,
-                                currency = user.currency,
-                                hideAmounts = user.hideAmounts,
-                                fontSize = 32,
-                                color = if (snapshot.isOverBudget) CoralDanger else TextWhite
-                            )
-                        }
+                        Text(
+                            text = "RESTE À VIVRE (CE MOIS)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (snapshot.isOverBudget) CoralDanger else ElectricCyan,
+                            letterSpacing = 1.sp
+                        )
 
                         // Badge status
                         Box(
@@ -169,16 +162,28 @@ fun DashboardScreen(
                                     if (snapshot.isOverBudget) CoralDanger else EmeraldSuccess,
                                     RoundedCornerShape(12.dp)
                                 )
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
                             Text(
                                 text = if (snapshot.isOverBudget) "Dépassement" else "Dans le vert",
                                 color = if (snapshot.isOverBudget) CoralDanger else EmeraldSuccess,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    PrivacyAmountText(
+                        amount = snapshot.remainingBudget,
+                        currency = user.currency,
+                        hideAmounts = user.hideAmounts,
+                        fontSize = 30,
+                        color = if (snapshot.isOverBudget) CoralDanger else TextWhite
+                    )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -192,31 +197,46 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        val dailyFormatted = String.format(java.util.Locale.FRENCH, "%,d", snapshot.dailyAllowanceRemaining.toLong()).replace('\u00A0', ' ')
+                        val spentFormatted = String.format(java.util.Locale.FRENCH, "%,d", snapshot.totalExpenses.toLong()).replace('\u00A0', ' ')
+                        val salaryFormatted = String.format(java.util.Locale.FRENCH, "%,d", user.monthlySalary.toLong()).replace('\u00A0', ' ')
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Budget quotidien conseillé",
                                 fontSize = 11.sp,
-                                color = TextMuted
+                                color = TextMuted,
+                                maxLines = 1
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = if (user.hideAmounts) "•• ${user.currency}/jour" else "${snapshot.dailyAllowanceRemaining.toInt()} ${user.currency} / jour",
-                                fontSize = 15.sp,
+                                text = if (user.hideAmounts) "•• ${user.currency}/jour" else "$dailyFormatted ${user.currency} / j",
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = CyberGold
+                                color = CyberGold,
+                                maxLines = 1
                             )
                         }
 
-                        Column(horizontalAlignment = Alignment.End) {
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text(
                                 text = "Dépensé ce mois",
                                 fontSize = 11.sp,
-                                color = TextMuted
+                                color = TextMuted,
+                                maxLines = 1
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = if (user.hideAmounts) "••••" else "${snapshot.totalExpenses.toInt()} ${user.currency} / ${user.monthlySalary.toInt()} ${user.currency}",
-                                fontSize = 13.sp,
+                                text = if (user.hideAmounts) "••••" else "$spentFormatted / $salaryFormatted ${user.currency}",
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextWhite
+                                color = TextWhite,
+                                maxLines = 1
                             )
                         }
                     }
@@ -298,7 +318,7 @@ fun DashboardScreen(
             }
         }
 
-        // Secondary Action Row (Bilan Soir, Saisie Détail, Besoin ou Envie)
+        // Secondary Action Row (Bilan Soir, Simulateur, Saisie Détaillée)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -308,60 +328,237 @@ fun DashboardScreen(
                     onClick = onOpenEveningRecap,
                     modifier = Modifier
                         .weight(1f)
-                        .height(46.dp)
+                        .height(44.dp)
                         .testTag("open_evening_recap_btn"),
                     shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BrickSurfaceElevated),
                     border = ButtonDefaults.outlinedButtonBorder.copy(
                         brush = Brush.horizontalGradient(listOf(CyberGold, NeonVioletGlow))
                     )
                 ) {
-                    Icon(Icons.Default.NightsStay, contentDescription = null, tint = CyberGold, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Bilan Soir",
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.NightsStay, contentDescription = null, tint = CyberGold, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Bilan Soir",
+                            color = TextWhite,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
 
                 Button(
                     onClick = onOpenSimulator,
                     modifier = Modifier
-                        .weight(1.2f)
-                        .height(46.dp)
+                        .weight(1f)
+                        .height(44.dp)
                         .testTag("open_simulator_btn"),
                     shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BrickSurfaceElevated)
                 ) {
-                    Icon(Icons.Default.Psychology, contentDescription = null, tint = NeonVioletGlow, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Besoin/Envie ?",
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.Psychology, contentDescription = null, tint = NeonVioletGlow, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Simulateur",
+                            color = TextWhite,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
 
                 Button(
                     onClick = onOpenAddExpense,
                     modifier = Modifier
                         .weight(1f)
-                        .height(46.dp)
+                        .height(44.dp)
                         .testTag("add_expense_btn"),
                     shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BrickSurfaceElevated)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = ElectricCyan, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Détaillé",
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = ElectricCyan, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Détaillé",
+                            color = TextWhite,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+            }
+        }
+
+        // Pôle Affaires, Commerce, Stocks & Dons
+        item {
+            NeonGlassCard(borderColor = EmeraldSuccess.copy(alpha = 0.5f)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "💼", fontSize = 20.sp)
+                            Column {
+                                Text(
+                                    text = "AFFAIRES & COMMERCE",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = EmeraldSuccess,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = "Entrées / Ventes, Stocks & Dons",
+                                    fontSize = 11.sp,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onOpenBusinessHub,
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess.copy(alpha = 0.2f)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp).testTag("open_business_hub_btn")
+                        ) {
+                            Text("Pôle Affaires ➜", color = EmeraldSuccess, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // 3 Metric Pills: Entrées, Stocks, Dons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrickSurfaceElevated)
+                                .border(1.dp, EmeraldSuccess.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .padding(8.dp)
+                        ) {
+                            Column {
+                                Text("💰 Ventes / CA", fontSize = 10.sp, color = TextMuted, maxLines = 1)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                PrivacyAmountText(
+                                    amount = snapshot.totalBusinessInflow,
+                                    currency = user.currency,
+                                    hideAmounts = user.hideAmounts,
+                                    fontSize = 13,
+                                    fontWeight = FontWeight.Bold,
+                                    color = EmeraldSuccess
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrickSurfaceElevated)
+                                .border(1.dp, NeonVioletGlow.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .padding(8.dp)
+                        ) {
+                            Column {
+                                Text("📦 Invest. Stock", fontSize = 10.sp, color = TextMuted, maxLines = 1)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                PrivacyAmountText(
+                                    amount = snapshot.totalBusinessInvestments,
+                                    currency = user.currency,
+                                    hideAmounts = user.hideAmounts,
+                                    fontSize = 13,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NeonVioletGlow
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrickSurfaceElevated)
+                                .border(1.dp, CyberGold.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .padding(8.dp)
+                        ) {
+                            Column {
+                                Text("🕊️ Dons & Dîme", fontSize = 10.sp, color = TextMuted, maxLines = 1)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                PrivacyAmountText(
+                                    amount = snapshot.totalDonations,
+                                    currency = user.currency,
+                                    hideAmounts = user.hideAmounts,
+                                    fontSize = 13,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CyberGold
+                                )
+                            }
+                        }
+                    }
+
+                    // 3 Quick Action Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Button(
+                            onClick = { onOpenAddFlow("ENTREE") },
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            modifier = Modifier.weight(1f).height(36.dp).testTag("dash_add_inflow_btn")
+                        ) {
+                            Text("+ Entrée", color = BrickBackground, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { onOpenAddFlow("INVESTISSEMENT") },
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonViolet),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            modifier = Modifier.weight(1f).height(36.dp).testTag("dash_add_invest_btn")
+                        ) {
+                            Text("+ Stock", color = TextWhite, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { onOpenAddFlow("DON") },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberGold),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            modifier = Modifier.weight(1f).height(36.dp).testTag("dash_add_don_btn")
+                        ) {
+                            Text("+ Don", color = BrickBackground, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -610,7 +807,8 @@ fun TransactionCardItem(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
         ) {
             Box(
                 modifier = Modifier
@@ -636,12 +834,13 @@ fun TransactionCardItem(
                 )
             }
 
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = transaction.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextWhite
+                    color = TextWhite,
+                    maxLines = 1
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -650,7 +849,8 @@ fun TransactionCardItem(
                     Text(
                         text = "$dateStr • ${transaction.category}",
                         fontSize = 11.sp,
-                        color = TextMuted
+                        color = TextMuted,
+                        maxLines = 1
                     )
                     Box(
                         modifier = Modifier
@@ -662,22 +862,34 @@ fun TransactionCardItem(
                             text = typeLabel,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = typeColor
+                            color = typeColor,
+                            maxLines = 1
                         )
                     }
                 }
             }
         }
 
+        Spacer(modifier = Modifier.width(6.dp))
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            val isCfa = currency.uppercase().contains("CFA") || currency.uppercase().contains("F")
+            val amtStr = if (isCfa || transaction.amount % 1.0 == 0.0) {
+                String.format(Locale.FRENCH, "%,d", transaction.amount.toLong()).replace('\u00A0', ' ')
+            } else {
+                String.format(Locale.FRENCH, "%,.2f", transaction.amount).replace('\u00A0', ' ')
+            }
+            val displayAmount = if (hideAmounts) "•••• $currency" else "-$amtStr $currency"
+
             Text(
-                text = if (hideAmounts) "•• $currency" else "-${String.format("%.2f", transaction.amount)} $currency",
-                fontSize = 14.sp,
+                text = displayAmount,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.type == "ENVIE") WantColor else TextWhite
+                color = if (transaction.type == "ENVIE") WantColor else TextWhite,
+                maxLines = 1
             )
 
             IconButton(

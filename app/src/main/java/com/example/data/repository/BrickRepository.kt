@@ -60,12 +60,12 @@ class BrickRepository(
         assetDao.clearAll()
         val defaultProfile = UserProfile(
             name = "",
-            currency = "€",
-            monthlySalary = 2500.0,
+            currency = "FCFA",
+            monthlySalary = 350000.0,
             payDayOfMonth = 28,
             dailyReminderHour = 20,
             dailyReminderMinute = 0,
-            fixedCharges = 900.0,
+            fixedCharges = 120000.0,
             needsBudgetPercentage = 50,
             wantsBudgetPercentage = 30,
             savingsBudgetPercentage = 20,
@@ -82,12 +82,12 @@ class BrickRepository(
         if (existingUser == null) {
             val profile = UserProfile(
                 name = "",
-                currency = "€",
-                monthlySalary = 2500.0,
+                currency = "FCFA",
+                monthlySalary = 350000.0,
                 payDayOfMonth = 28,
                 dailyReminderHour = 20,
                 dailyReminderMinute = 0,
-                fixedCharges = 900.0,
+                fixedCharges = 120000.0,
                 needsBudgetPercentage = 50,
                 wantsBudgetPercentage = 30,
                 savingsBudgetPercentage = 20,

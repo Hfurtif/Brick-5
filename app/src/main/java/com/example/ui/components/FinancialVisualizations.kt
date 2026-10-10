@@ -417,6 +417,7 @@ fun SpendingTrendCurve(
 @Composable
 fun WeeklyHeatmap(
     transactions: List<TransactionEntity>,
+    currency: String = "FCFA",
     modifier: Modifier = Modifier
 ) {
     // 7 days (Lundi to Dimanche)
@@ -449,6 +450,13 @@ fun WeeklyHeatmap(
                     else -> BrickSurfaceElevated
                 }
 
+                val amountBadgeText = when {
+                    dayTotals[i] == 0.0 -> "-"
+                    dayTotals[i] >= 10000 -> "${(dayTotals[i] / 1000).toInt()}k"
+                    dayTotals[i] >= 1000 -> "${String.format(java.util.Locale.FRENCH, "%.1f", dayTotals[i] / 1000)}k"
+                    else -> "${dayTotals[i].toInt()}"
+                }
+
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -466,7 +474,7 @@ fun WeeklyHeatmap(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${dayTotals[i].toInt()}€",
+                            text = amountBadgeText,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (ratio > 0.4f) TextWhite else TextMuted
@@ -482,8 +490,9 @@ fun WeeklyHeatmap(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
+        val peakAmountFormatted = String.format(java.util.Locale.FRENCH, "%,d", dayTotals[peakDayIndex].toLong()).replace('\u00A0', ' ')
         Text(
-            text = "Pic de dépenses détecté le ${dayNames[peakDayIndex]} (${dayTotals[peakDayIndex].toInt()} €).",
+            text = "Pic de dépenses détecté le ${dayNames[peakDayIndex]} ($peakAmountFormatted $currency).",
             fontSize = 11.sp,
             color = CyberGold,
             fontWeight = FontWeight.Medium

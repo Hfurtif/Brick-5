@@ -25,11 +25,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Security
@@ -58,6 +60,7 @@ import com.example.ui.screens.AssetsLiabilitiesScreen
 import com.example.ui.screens.BiometricLockScreen
 import com.example.ui.screens.BrickAnimatedSplashScreen
 import com.example.ui.screens.BudgetAnalyticsScreen
+import com.example.ui.screens.BusinessFlowScreen
 import com.example.ui.screens.CoachAiScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.EveningRecapDialog
@@ -150,6 +153,7 @@ fun MainAppContent(viewModel: BrickViewModel) {
 
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
     val showAddExpense by viewModel.showAddExpenseDialog.collectAsStateWithLifecycle()
+    val addExpenseInitialMode by viewModel.addExpenseInitialMode.collectAsStateWithLifecycle()
     val showQuickAdd by viewModel.showQuickAddSheet.collectAsStateWithLifecycle()
     val showEveningRecap by viewModel.showEveningRecap.collectAsStateWithLifecycle()
     val todayTransactions by viewModel.todayTransactions.collectAsStateWithLifecycle()
@@ -215,16 +219,26 @@ fun MainAppContent(viewModel: BrickViewModel) {
                         onOpenAddExpense = { viewModel.openAddExpenseDialog() },
                         onOpenEveningRecap = { viewModel.openEveningRecap() },
                         onOpenSimulator = { viewModel.openPurchaseSimulator() },
+                        onOpenBusinessHub = { viewModel.selectScreen(1) },
+                        onOpenAddFlow = { mode -> viewModel.openAddExpenseDialog(mode) },
                         onDeleteTransaction = { viewModel.deleteTransaction(it) }
                     )
 
-                    1 -> BudgetAnalyticsScreen(
+                    1 -> BusinessFlowScreen(
+                        user = userProfile,
+                        snapshot = financialSnapshot,
+                        transactions = transactions,
+                        onOpenAddTransactionWithMode = { mode -> viewModel.openAddExpenseDialog(mode) },
+                        onDeleteTransaction = { viewModel.deleteTransaction(it) }
+                    )
+
+                    2 -> BudgetAnalyticsScreen(
                         user = userProfile,
                         snapshot = financialSnapshot,
                         transactions = transactions
                     )
 
-                    2 -> AssetsLiabilitiesScreen(
+                    3 -> AssetsLiabilitiesScreen(
                         user = userProfile,
                         assetsLiabilities = assetsLiabilities,
                         goals = goals,
@@ -241,14 +255,15 @@ fun MainAppContent(viewModel: BrickViewModel) {
                         onDeleteGoal = { viewModel.deleteGoal(it) }
                     )
 
-                    3 -> CoachAiScreen(
+                    4 -> CoachAiScreen(
                         messages = coachMessages,
                         isTyping = isCoachTyping,
                         isOnline = viewModel.isOnline(),
-                        onSendMessage = { viewModel.askCoach(it) }
+                        onSendMessage = { viewModel.askCoach(it) },
+                        currency = userProfile.currency
                     )
 
-                    4 -> ProfileSecurityScreen(
+                    5 -> ProfileSecurityScreen(
                         user = userProfile,
                         snapshot = financialSnapshot,
                         transactions = transactions,
@@ -263,6 +278,7 @@ fun MainAppContent(viewModel: BrickViewModel) {
             if (showAddExpense) {
                 AddExpenseDialog(
                     currency = userProfile.currency,
+                    initialFlowType = addExpenseInitialMode,
                     onDismiss = { viewModel.closeAddExpenseDialog() },
                     onConfirm = { title, amount, category, type, priority, note ->
                         viewModel.addTransaction(
@@ -329,6 +345,7 @@ fun BrickBottomNavigationBar(
 ) {
     val items = listOf(
         NavigationItem("Accueil", Icons.Filled.Home, Icons.Outlined.Home, "nav_home"),
+        NavigationItem("Affaires", Icons.Filled.Business, Icons.Outlined.Business, "nav_business"),
         NavigationItem("Budgets", Icons.Filled.PieChart, Icons.Outlined.PieChart, "nav_budgets"),
         NavigationItem("Actifs", Icons.Filled.AccountBalance, Icons.Outlined.AccountBalance, "nav_assets"),
         NavigationItem("Coach", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome, "nav_coach"),

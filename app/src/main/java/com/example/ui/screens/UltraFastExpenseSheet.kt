@@ -348,19 +348,33 @@ fun UltraFastExpenseSheet(
                         .height(54.dp)
                         .testTag("submit_quick_expense_btn"),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when (parsedResult.type) {
+                            "ENTREE" -> EmeraldSuccess
+                            "INVESTISSEMENT_AFFAIRES" -> NeonViolet
+                            "DON" -> CyberGold
+                            else -> ElectricCyan
+                        }
+                    )
                 ) {
+                    val isSpecial = parsedResult.type in listOf("ENTREE", "INVESTISSEMENT_AFFAIRES", "DON")
+                    val textColor = if (parsedResult.type == "INVESTISSEMENT_AFFAIRES") TextWhite else BrickBackground
                     Icon(
                         imageVector = Icons.Default.Bolt,
                         contentDescription = null,
-                        tint = BrickBackground
+                        tint = textColor
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "ENREGISTRER EN 5s (${parsedResult.amount.toInt()} $currency)",
-                        color = BrickBackground,
+                        text = when (parsedResult.type) {
+                            "ENTREE" -> "💰 NOTER L'ENTRÉE (+${parsedResult.amount.toInt()} $currency)"
+                            "INVESTISSEMENT_AFFAIRES" -> "📦 NOTER L'ACHAT STOCK (${parsedResult.amount.toInt()} $currency)"
+                            "DON" -> "🕊️ NOTER LE DON (${parsedResult.amount.toInt()} $currency)"
+                            else -> "ENREGISTRER EN 5s (${parsedResult.amount.toInt()} $currency)"
+                        },
+                        color = textColor,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp
+                        fontSize = 13.sp
                     )
                 }
             } else {

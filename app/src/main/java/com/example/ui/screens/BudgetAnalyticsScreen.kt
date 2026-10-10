@@ -70,7 +70,7 @@ fun BudgetAnalyticsScreen(
                 color = TextWhite
             )
             Text(
-                text = "Comprendre où part chaque euro sans jargon",
+                text = "Comprendre où part ton argent sans jargon",
                 fontSize = 12.sp,
                 color = TextMuted
             )
@@ -155,7 +155,10 @@ fun BudgetAnalyticsScreen(
                         color = TextMuted
                     )
                     Spacer(modifier = Modifier.height(14.dp))
-                    WeeklyHeatmap(transactions = transactions)
+                    WeeklyHeatmap(
+                        transactions = transactions,
+                        currency = user.currency
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "🗓️ Explication : Les couleurs chaudes indiquent tes pics de sorties. Prévois un budget fixe avant le week-end pour éviter les dérapages.",
