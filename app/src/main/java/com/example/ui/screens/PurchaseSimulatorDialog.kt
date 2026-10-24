@@ -1,197 +1,202 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.ai.PurchaseSimulationResult
-import com.example.ui.theme.BrickBackground
-import com.example.ui.theme.BrickSurfaceBorder
-import com.example.ui.theme.BrickSurfaceElevated
-import com.example.ui.theme.CoralDanger
-import com.example.ui.theme.CyberGold
-import com.example.ui.theme.ElectricCyan
-import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.NeonViolet
-import com.example.ui.theme.NeonVioletGlow
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextWhite
+import com.example.ui.theme.*
 
 @Composable
 fun PurchaseSimulatorDialog(
     currency: String,
     simulationResult: PurchaseSimulationResult?,
-    onSimulate: (amount: Double, title: String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSimulate: (amount: Double, title: String) -> Unit
 ) {
+    var title by remember { mutableStateOf("") }
     var amountStr by remember { mutableStateOf("") }
-    var itemTitle by remember { mutableStateOf("") }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = BrickSurfaceElevated,
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 480.dp)
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(24.dp),
+                color = BrickSurface,
+                border = BorderStroke(1.dp, BrickSurfaceBorder),
+                tonalElevation = 6.dp
             ) {
-                Icon(
-                    imageVector = Icons.Default.Psychology,
-                    contentDescription = null,
-                    tint = NeonVioletGlow
-                )
-                Text(
-                    text = "Besoin ou Envie ?",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextWhite
-                )
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Avant de dégainer ta carte bleue pour un coup de tête, évalue l'impact réel sur ton mois et ton temps de vie.",
-                    fontSize = 12.sp,
-                    color = TextMuted,
-                    lineHeight = 16.sp
-                )
-
-                OutlinedTextField(
-                    value = itemTitle,
-                    onValueChange = { itemTitle = it },
-                    label = { Text("Qu'est-ce que tu veux acheter ?") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        focusedBorderColor = NeonVioletGlow,
-                        unfocusedBorderColor = BrickSurfaceBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("sim_title_input")
-                )
-
-                OutlinedTextField(
-                    value = amountStr,
-                    onValueChange = { amountStr = it },
-                    label = { Text("Prix ($currency)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        focusedBorderColor = NeonVioletGlow,
-                        unfocusedBorderColor = BrickSurfaceBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("sim_amount_input")
-                )
-
-                Button(
-                    onClick = {
-                        val amount = amountStr.replace(',', '.').toDoubleOrNull() ?: 0.0
-                        if (amount > 0.0) {
-                            onSimulate(amount, itemTitle.ifBlank { "Achat" })
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonViolet),
-                    modifier = Modifier.fillMaxWidth().testTag("run_simulation_btn")
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Calculer l'impact",
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberGold, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Le Réfléchisseur BRICK",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = BrickTextPrimary
+                            )
+                        }
 
-                if (simulationResult != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Fermer", tint = BrickTextMuted)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Simulez un achat impulsif avant de dépenser votre argent.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BrickTextMuted,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (simulationResult.canAfford) EmeraldSuccess.copy(alpha = 0.12f)
-                                else CoralDanger.copy(alpha = 0.12f)
-                            )
-                            .border(
-                                1.dp,
-                                if (simulationResult.canAfford) EmeraldSuccess.copy(alpha = 0.4f)
-                                else CoralDanger.copy(alpha = 0.4f),
-                                RoundedCornerShape(14.dp)
-                            )
-                            .padding(12.dp)
+                            .testTag("sim_title_input"),
+                        label = { Text("Qu'avez-vous envie d'acheter ?", color = BrickTextMuted) },
+                        placeholder = { Text("Ex: Nouvelle paire de baskets, smartphone...", color = BrickTextMuted) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CyberGold,
+                            unfocusedBorderColor = BrickSurfaceBorder,
+                            focusedTextColor = BrickTextPrimary,
+                            unfocusedTextColor = BrickTextPrimary
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = amountStr,
+                        onValueChange = { newVal ->
+                            if (newVal.all { it.isDigit() || it == '.' || it == ',' }) {
+                                amountStr = newVal
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("sim_amount_input"),
+                        label = { Text("Prix de l'article ($currency)", color = BrickTextMuted) },
+                        placeholder = { Text("Ex: 45000", color = BrickTextMuted) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CyberGold,
+                            unfocusedBorderColor = BrickSurfaceBorder,
+                            focusedTextColor = BrickTextPrimary,
+                            unfocusedTextColor = BrickTextPrimary
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val amount = amountStr.replace(",", ".").toDoubleOrNull() ?: 0.0
+
+                    Button(
+                        onClick = {
+                            if (amount > 0) {
+                                onSimulate(amount, title.ifEmpty { "Achat plaisir" })
+                            }
+                        },
+                        enabled = amount > 0,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("sim_submit_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CyberGold)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = simulationResult.recommendation,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (simulationResult.canAfford) EmeraldSuccess else CoralDanger
-                            )
+                        Text("Analyser l'impact financier 🧠", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
 
-                            Text(
-                                text = "⏱️ Coût en travail : ${String.format("%.1f", simulationResult.hoursOfWork)} heures de ton labeur pour cet objet.",
-                                fontSize = 11.sp,
-                                color = CyberGold,
-                                fontWeight = FontWeight.Medium
-                            )
+                    if (simulationResult != null) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        HorizontalDivider(color = BrickSurfaceBorder)
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                            Text(
-                                text = "📉 Reste à vivre après achat : ~${simulationResult.impactOnDailyAllowance.toInt()} $currency / jour.",
-                                fontSize = 11.sp,
-                                color = TextWhite
-                            )
-
-                            Text(
-                                text = "🧱 ${simulationResult.alternativeRichDadAdvice}",
-                                fontSize = 11.sp,
-                                color = TextMuted,
-                                lineHeight = 15.sp
-                            )
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = BrickSurfaceElevated,
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, if (simulationResult.canAfford) EmeraldSuccess else CoralDanger)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(
+                                    text = simulationResult.verdict,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (simulationResult.score >= 60) EmeraldSuccess else CoralDanger
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = simulationResult.advice,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BrickTextPrimary,
+                                    lineHeight = 18.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "⏳ " + simulationResult.impactOnGoals,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = CyberGold,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = "Fermer", color = ElectricCyan)
-            }
         }
-    )
+    }
 }

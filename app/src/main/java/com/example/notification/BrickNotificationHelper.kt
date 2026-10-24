@@ -7,110 +7,102 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.example.MainActivity
-import com.example.R
+import com.example.ui.viewmodel.BudgetAlert
+import com.example.ui.viewmodel.BudgetAlertSeverity
 
 object BrickNotificationHelper {
+    private const val CHANNEL_BUDGET_ALERTS = "brick_budget_alerts"
+    private const val CHANNEL_DAILY_RECAP = "brick_daily_recap"
 
-    const val CHANNEL_ID = "brick_daily_recap_channel"
-    private const val NOTIFICATION_ID = 1001
-
-    fun createNotificationChannel(context: Context) {
+    fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Rappel Quotidien BRICK"
-            val descriptionText = "Notifications du soir pour le récapitulatif des dépenses du jour"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                ?: return
+
+            val alertChannel = NotificationChannel(
+                CHANNEL_BUDGET_ALERTS,
+                "Alertes Dépassement Budget",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications lorsque vos catégories 50/30/20 approchent ou dépassent leur plafond."
+                enableVibration(true)
             }
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            val recapChannel = NotificationChannel(
+                CHANNEL_DAILY_RECAP,
+                "Récapitulatif du Soir",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Bilan quotidien de vos finances et reste à vivre."
+            }
+
+            manager.createNotificationChannel(alertChannel)
+            manager.createNotificationChannel(recapChannel)
         }
     }
 
-    fun sendEveningNotification(
+    fun sendBudgetAlert(context: Context, alert: BudgetAlert) {
+        createChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            alert.id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val iconRes = android.R.drawable.stat_notify_error
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_BUDGET_ALERTS)
+            .setSmallIcon(iconRes)
+            .setContentTitle("BRICK ⚠️ " + alert.title)
+            .setContentText(alert.message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${alert.message}\n\n💡 Conseil BRICK : ${alert.recommendation}"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(alert.id.hashCode(), notification)
+    }
+
+    fun sendDailyRecapNotification(
         context: Context,
-        todaySpent: Double,
+        resteAVivre: Double,
+        spentToday: Double,
         currency: String
     ) {
-        createNotificationChannel(context)
+        createChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
 
-        val intent = Intent(context, MainActivity::class.java).apply {
-            action = "com.example.brick.ACTION_EVENING_RECAP"
-            putExtra("open_evening_recap", true)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-
+        val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            1001,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val formattedAmount = String.format("%,.0f", todaySpent).replace(',', ' ')
+        val formattedReste = String.format("%,.0f %s", resteAVivre, currency)
+        val formattedSpent = String.format("%,.0f %s", spentToday, currency)
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("🌙 BRICK • Bilan de ta journée")
-            .setContentText("Aujourd'hui, tu as dépensé $formattedAmount $currency.")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("Aujourd'hui, tu as dépensé $formattedAmount $currency. Touche pour voir le détail de tes dépenses et ton conseil IA du soir.")
-            )
+        val notification = NotificationCompat.Builder(context, CHANNEL_DAILY_RECAP)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("BRICK 🌙 Bilan du Soir")
+            .setContentText("Dépenses du jour: $formattedSpent | Reste à vivre: $formattedReste")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Aujourd'hui, vous avez dépensé $formattedSpent.\nVotre reste à vivre disponible est de $formattedReste.\nGardez le contrôle sur votre forteresse financière !"))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-
-        try {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(NOTIFICATION_ID, builder.build())
-        } catch (e: SecurityException) {
-            // Permission not granted yet
-        }
-    }
-
-    fun sendEveningNotificationWithSummary(
-        context: Context,
-        todaySpent: Double,
-        currency: String,
-        summary: String
-    ) {
-        createNotificationChannel(context)
-
-        val intent = Intent(context, MainActivity::class.java).apply {
-            action = "com.example.brick.ACTION_EVENING_RECAP"
-            putExtra("open_evening_recap", true)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val formattedAmount = String.format("%,.0f", todaySpent).replace(',', ' ')
-
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("🌙 BRICK • Bilan du soir ($formattedAmount $currency)")
-            .setContentText("Aujourd'hui, tu as dépensé $formattedAmount $currency.")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("Aujourd'hui, tu as dépensé $formattedAmount $currency.\n$summary\nTouche pour consulter le détail de tes dépenses.")
-            )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
+            .build()
 
-        try {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(NOTIFICATION_ID, builder.build())
-        } catch (e: SecurityException) {
-            // Permission not granted yet
-        }
+        manager.notify(1001, notification)
     }
 }

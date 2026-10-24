@@ -14,59 +14,59 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkMaterialColorScheme = darkColorScheme(
-    primary = DarkBrickColors.primary,
-    onPrimary = DarkBrickColors.background,
-    primaryContainer = DarkBrickColors.surfaceElevated,
-    onPrimaryContainer = DarkBrickColors.primary,
-    secondary = DarkBrickColors.secondaryGlow,
-    onSecondary = DarkBrickColors.background,
-    secondaryContainer = DarkBrickColors.surfaceElevated,
-    onSecondaryContainer = DarkBrickColors.secondaryGlow,
-    tertiary = DarkBrickColors.cyberGold,
-    onTertiary = DarkBrickColors.background,
-    background = DarkBrickColors.background,
-    onBackground = DarkBrickColors.textPrimary,
-    surface = DarkBrickColors.surface,
-    onSurface = DarkBrickColors.textPrimary,
-    surfaceVariant = DarkBrickColors.surfaceElevated,
-    onSurfaceVariant = DarkBrickColors.textMuted,
-    outline = DarkBrickColors.surfaceBorder,
-    error = DarkBrickColors.coralDanger,
-    onError = DarkBrickColors.textPrimary
+    primary = Color(0xFF00E5FF),
+    onPrimary = Color(0xFF0A0E1A),
+    primaryContainer = Color(0xFF1A233D),
+    onPrimaryContainer = Color(0xFF00E5FF),
+    secondary = Color(0xFF8B5CF6),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFF1E293B),
+    onSecondaryContainer = Color(0xFFA78BFA),
+    tertiary = Color(0xFFFFB800),
+    onTertiary = Color(0xFF0A0E1A),
+    background = Color(0xFF0A0E1A),
+    onBackground = Color(0xFFF1F5F9),
+    surface = Color(0xFF131B2E),
+    onSurface = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFF1A233D),
+    onSurfaceVariant = Color(0xFF94A3B8),
+    error = Color(0xFFEF4444),
+    onError = Color(0xFFFFFFFF),
+    outline = Color(0xFF243052)
 )
 
 private val LightMaterialColorScheme = lightColorScheme(
-    primary = LightBrickColors.primary,
-    onPrimary = Color.White,
-    primaryContainer = LightBrickColors.surfaceElevated,
-    onPrimaryContainer = LightBrickColors.primary,
-    secondary = LightBrickColors.secondary,
-    onSecondary = Color.White,
-    secondaryContainer = LightBrickColors.surfaceElevated,
-    onSecondaryContainer = LightBrickColors.secondary,
-    tertiary = LightBrickColors.cyberGold,
-    onTertiary = Color.White,
-    background = LightBrickColors.background,
-    onBackground = LightBrickColors.textPrimary,
-    surface = LightBrickColors.surface,
-    onSurface = LightBrickColors.textPrimary,
-    surfaceVariant = LightBrickColors.surfaceElevated,
-    onSurfaceVariant = LightBrickColors.textMuted,
-    outline = LightBrickColors.surfaceBorder,
-    error = LightBrickColors.coralDanger,
-    onError = Color.White
+    primary = Color(0xFF0284C7),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFF1F5F9),
+    onPrimaryContainer = Color(0xFF0284C7),
+    secondary = Color(0xFF7C3AED),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFF8FAFC),
+    onSecondaryContainer = Color(0xFF8B5CF6),
+    tertiary = Color(0xFFD97706),
+    onTertiary = Color(0xFFFFFFFF),
+    background = Color(0xFFF8FAFC),
+    onBackground = Color(0xFF0F172A),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFF1F5F9),
+    onSurfaceVariant = Color(0xFF64748B),
+    error = Color(0xFFDC2626),
+    onError = Color(0xFFFFFFFF),
+    outline = Color(0xFFCBD5E1)
 )
 
 @Composable
 fun BrickTheme(
-    themeMode: String = "SYSTEM", // "SYSTEM", "DARK", "LIGHT"
+    themeMode: String = "DARK",
     content: @Composable () -> Unit
 ) {
     val systemInDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
         "DARK" -> true
         "LIGHT" -> false
-        else -> systemInDark // Automatic system detection
+        else -> systemInDark
     }
 
     val brickColors = if (isDark) DarkBrickColors else LightBrickColors
@@ -86,9 +86,7 @@ fun BrickTheme(
         }
     }
 
-    CompositionLocalProvider(
-        LocalBrickColors provides brickColors
-    ) {
+    CompositionLocalProvider(LocalBrickColors provides brickColors) {
         MaterialTheme(
             colorScheme = materialColorScheme,
             typography = Typography,

@@ -6,17 +6,14 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.widget.RemoteViews
+import com.aistudio.brick.finances.R
 import com.example.MainActivity
-import com.example.R
 import com.example.data.db.BrickDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.Locale
-import kotlin.math.max
 
 class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
 
@@ -30,7 +27,9 @@ class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == ACTION_REFRESH_RESTE_A_VIVRE || intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
+        if (intent.action == "com.example.brick.ACTION_REFRESH_RESTE_A_VIVRE" ||
+            intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE
+        ) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val thisWidget = ComponentName(context, BrickResteAVivreWidgetProvider::class.java)
             val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
@@ -38,124 +37,69 @@ class BrickResteAVivreWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun updateWidgets(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        if (appWidgetIds.isEmpty()) return
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val db = BrickDatabase.getInstance(context)
-            val user = db.userDao().getUserProfileDirect()
-
-            val cal = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val startOfToday = cal.timeInMillis
-
-            val todayTxs = db.transactionDao().getTransactionsSinceDirect(startOfToday)
-            val todaySpent = todayTxs.sumOf { it.amount }
-
-            val totalDaysInMonth = max(1, Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH))
-            val monthlySalary = user?.monthlySalary ?: 350000.0
-            val fixedCharges = user?.fixedCharges ?: 120000.0
-            val currency = user?.currency ?: "FCFA"
-
-            // Daily quota available for discretionary spend
-            val availableMonthly = max(0.0, monthlySalary - fixedCharges)
-            val dailyBudget = availableMonthly / totalDaysInMonth
-            val resteAVivre = dailyBudget - todaySpent
-            val isCfa = currency.uppercase().contains("CFA") || currency.uppercase().contains("F")
-
-            for (widgetId in appWidgetIds) {
-                val views = RemoteViews(context.packageName, R.layout.widget_reste_a_vivre)
-
-                val formattedReste = if (isCfa || resteAVivre % 1.0 == 0.0) {
-                    "${resteAVivre.toLong()} $currency"
-                } else {
-                    String.format(Locale.FRENCH, "%.1f %s", resteAVivre, currency)
-                }
-
-                // Formatting Reste à vivre text and status
-                val (amountText, amountColor, statusText, statusColor) = when {
-                    resteAVivre >= dailyBudget * 0.4 -> {
-                        Tuple4(
-                            "+$formattedReste",
-                            Color.parseColor("#38BDF8"), // Cyan
-                            "🛡️ Dans les clous",
-                            Color.parseColor("#10B981") // Green
-                        )
-                    }
-                    resteAVivre >= 0 -> {
-                        Tuple4(
-                            "+$formattedReste",
-                            Color.parseColor("#F59E0B"), // Amber
-                            "⚠️ Limite proche",
-                            Color.parseColor("#F59E0B")
-                        )
-                    }
-                    else -> {
-                        Tuple4(
-                            formattedReste,
-                            Color.parseColor("#EF4444"), // Red
-                            "🚨 Quota dépassé",
-                            Color.parseColor("#EF4444")
-                        )
-                    }
-                }
-
-                views.setTextViewText(R.id.widget_amount, amountText)
-                views.setTextColor(R.id.widget_amount, amountColor)
-
-                val detailsText = "Dépensé : ${todaySpent.toInt()} $currency • Quota : ${dailyBudget.toInt()} $currency"
-                views.setTextViewText(R.id.widget_details, detailsText)
-
-                views.setTextViewText(R.id.widget_status, statusText)
-                views.setTextColor(R.id.widget_status, statusColor)
-
-                // Open app on click on widget body
-                val openAppIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                }
-                val openAppPendingIntent = PendingIntent.getActivity(
-                    context,
-                    widgetId,
-                    openAppIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
-
-                // Manual refresh button on click
-                val refreshIntent = Intent(context, BrickResteAVivreWidgetProvider::class.java).apply {
-                    action = ACTION_REFRESH_RESTE_A_VIVRE
-                }
-                val refreshPendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    widgetId,
-                    refreshIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(R.id.widget_refresh_btn, refreshPendingIntent)
-
-                appWidgetManager.updateAppWidget(widgetId, views)
-            }
-        }
-    }
-
-    private data class Tuple4<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
-
     companion object {
-        const val ACTION_REFRESH_RESTE_A_VIVRE = "com.example.brick.ACTION_REFRESH_RESTE_A_VIVRE"
+        fun updateWidgets(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetIds: IntArray
+        ) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val db = BrickDatabase.getInstance(context)
+                val user = db.userDao().getUserProfileDirect()
 
-        fun updateAllWidgets(context: Context) {
-            val intent = Intent(context, BrickResteAVivreWidgetProvider::class.java).apply {
-                action = ACTION_REFRESH_RESTE_A_VIVRE
+                val cal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val todayTxs = db.transactionDao().getTransactionsSinceDirect(cal.timeInMillis)
+                val spentToday = todayTxs.filter { it.type == "DEPENSE" }.sumOf { it.amount }
+
+                val currency = user?.currency ?: "FCFA"
+                val monthlySalary = user?.monthlySalary ?: 0.0
+                val fixedCharges = user?.fixedCharges ?: 0.0
+
+                val dailyBudget = if (monthlySalary > 0) {
+                    maxOf(0.0, (monthlySalary - fixedCharges) / 30.0)
+                } else {
+                    val allTxs = db.transactionDao().getTransactionsSinceDirect(0L)
+                    val cash = allTxs.filter { it.type == "REVENU" }.sumOf { it.amount } -
+                            allTxs.filter { it.type == "DEPENSE" }.sumOf { it.amount }
+                    maxOf(0.0, cash / 30.0)
+                }
+
+                val resteAVivre = maxOf(0.0, dailyBudget - spentToday)
+
+                for (appWidgetId in appWidgetIds) {
+                    val openAppIntent = Intent(context, MainActivity::class.java)
+                    val openPendingIntent = PendingIntent.getActivity(
+                        context,
+                        0,
+                        openAppIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    val refreshIntent = Intent(context, BrickResteAVivreWidgetProvider::class.java).apply {
+                        action = "com.example.brick.ACTION_REFRESH_RESTE_A_VIVRE"
+                    }
+                    val refreshPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        1,
+                        refreshIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    val views = RemoteViews(context.packageName, R.layout.widget_reste_a_vivre).apply {
+                        setTextViewText(R.id.widget_amount, String.format("%,.0f %s", resteAVivre, currency))
+                        setTextViewText(R.id.widget_details, "Dépensé aujourd'hui: ${String.format("%,.0f", spentToday)} $currency")
+                        setOnClickPendingIntent(R.id.widget_root, openPendingIntent)
+                        setOnClickPendingIntent(R.id.widget_refresh_btn, refreshPendingIntent)
+                    }
+
+                    appWidgetManager.updateAppWidget(appWidgetId, views)
+                }
             }
-            context.sendBroadcast(intent)
         }
     }
 }

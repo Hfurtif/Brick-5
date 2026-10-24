@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_widget_button"
-    android:orientation="vertical"
     android:gravity="center"
+    android:orientation="vertical"
     android:padding="10dp">
 
     <TextView
@@ -13,16 +13,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="⚡ ➕ Ajout Dépense Rapide"
-        android:textColor="#00E5FF"
-        android:textStyle="bold"
-        android:textSize="12sp" />
+        android:textColor="#FF00E5FF"
+        android:textSize="12sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/widget_sub"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="BRICK • Écran d'accueil"
-        android:textColor="#94A3B8"
+        android:textColor="#FF94A3B8"
         android:textSize="10sp" />
-
 </LinearLayout>

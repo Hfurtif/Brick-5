@@ -8,66 +8,76 @@ data class UserProfile(
     @PrimaryKey val id: Int = 1,
     val name: String = "Alexandre",
     val currency: String = "FCFA",
-    val monthlySalary: Double = 350000.0,
+    val monthlySalary: Double = 0.0,
     val payDayOfMonth: Int = 28,
     val dailyReminderHour: Int = 20,
     val dailyReminderMinute: Int = 0,
-    val fixedCharges: Double = 120000.0, // Loyer, charges, factures fixes
+    val fixedCharges: Double = 0.0,
     val needsBudgetPercentage: Int = 50,
     val wantsBudgetPercentage: Int = 30,
     val savingsBudgetPercentage: Int = 20,
-    val payYourselfFirstPercentage: Int = 20,
+    val payYourselfFirstPercentage: Int = 10,
     val isOnboarded: Boolean = false,
-    val pinCode: String = "", // Vide si désactivé
-    val biometricEnabled: Boolean = false, // Empreinte digitale ou code du smartphone
+    val pinCode: String = "",
+    val biometricEnabled: Boolean = false,
     val hideAmounts: Boolean = false,
-    val themeMode: String = "SYSTEM", // SYSTEM (Auto), DARK, LIGHT
-    val streakDays: Int = 0,
-    val lastActiveTimestamp: Long = System.currentTimeMillis()
+    val themeMode: String = "DARK",
+    val streakDays: Int = 1,
 )
 
-@Entity(tableName = "transactions")
-data class TransactionEntity(
+@Entity(tableName = "categories")
+data class CategoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val title: String,
-    val amount: Double,
-    val category: String, // Alimentation, Logement, Transports, Loisirs, Shopping, Abonnements, Santé, Investissement, Dettes, Autre
-    val type: String, // BESOIN, ENVIE, EPARGNE, ACTIF, PASSIF
-    val priority: String = "UTILE", // ESSENTIEL, UTILE, SUPERFLU
-    val note: String = "",
-    val timestamp: Long = System.currentTimeMillis(),
-    val isRecurring: Boolean = false
+    val name: String,
+    val bucket: String, // "NEEDS", "WANTS", "SAVINGS", "INCOME"
+    val icon: String = "📁",
+    val colorHex: String = "#00E5FF",
+    val isDefault: Boolean = true
 )
 
-@Entity(tableName = "financial_goals")
+@Entity(tableName = "budget_settings")
+data class BudgetSettingsEntity(
+    @PrimaryKey val id: Int = 1,
+    val monthlyIncomeBase: Double = 0.0,
+    val needsPercentage: Int = 50,
+    val wantsPercentage: Int = 30,
+    val savingsPercentage: Int = 20,
+    val alertThresholdPercentage: Int = 80,
+    val alertOnExceeded: Boolean = true,
+    val currency: String = "FCFA",
+    val lastUpdated: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "goals")
 data class FinancialGoal(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val targetAmount: Double,
-    val currentAmount: Double,
-    val targetDate: Long = System.currentTimeMillis() + (180L * 24 * 3600 * 1000), // 6 mois
-    val category: String = "EPARGNE" // EPARGNE, URGENCE, ACTIF, PROJET
+    val currentAmount: Double = 0.0,
+    val targetDate: Long = 0L,
+    val category: String = "EPARGNE"
 )
 
 @Entity(tableName = "assets_liabilities")
 data class AssetLiability(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val type: String, // ACTIF ou PASSIF
-    val category: String = "Liquidités", // Liquidités, Bourse, Immobilier, Crypto, Crédit Conso, etc.
-    val value: Double, // Valeur actuelle ou capital restant
-    val monthlyCashflow: Double, // Revenu passif (+) ou Mensualité/Coût mensuel (-)
+    val type: String, // "ACTIF", "PASSIF"
+    val category: String, // "IMMOBILIER", "CAISSE", "TONTINE", "BUSINESS", "DETTE", "CREDIT"
+    val value: Double,
+    val monthlyCashflow: Double = 0.0,
     val note: String = ""
 )
 
-enum class ExpenseClassification(val label: String, val description: String) {
-    BESOIN("Besoin (50%)", "Indispensable pour vivre et travailler"),
-    ENVIE("Envie (30%)", "Plaisirs, sorties, confort et loisirs"),
-    EPARGNE("Épargne & Actif (20%)", "Se payer en premier pour sa liberté future")
+enum class PriorityLevel(val label: String, val advice: String) {
+    ESSENTIAL("Indispensable (Besoins 50%)", "Dépense prioritaire vitale"),
+    COMFORT("Confort / Plaisir (Envies 30%)", "Dépense modulable ou reportable"),
+    IMPULSE("Pulsion / Risque", "Attention au gaspillage et fuites financières"),
+    INVESTMENT("Investissement / Épargne (20%)", "Bâtit ton avenir et ta sécurité")
 }
 
-enum class PriorityLevel(val label: String, val advice: String) {
-    ESSENTIEL("Essentielle", "Ne peut être différée sans risque"),
-    UTILE("Utile", "Améliore le quotidien mais négociable"),
-    SUPERFLU("Superflue", "Achat impulsif ou confort superflu à différer")
+enum class ExpenseClassification(val label: String, val description: String) {
+    NEEDS("Besoins (50%)", "Nourriture, loyer, transport, santé, électricité"),
+    WANTS("Envies (30%)", "Sorties, loisirs, shopping, restaurants"),
+    SAVINGS("Épargne / Dettes (20%)", "Tontine, réserve de sécurité, investissement, remboursement")
 }

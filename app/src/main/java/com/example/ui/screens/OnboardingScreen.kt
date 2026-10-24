@@ -1,25 +1,10 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,23 +14,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -54,148 +30,174 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
 import com.example.ui.components.BrickLogo
-import com.example.ui.components.NeonGlassCard
-import com.example.ui.theme.BrickBackground
-import com.example.ui.theme.BrickSurfaceBorder
-import com.example.ui.theme.BrickSurfaceElevated
-import com.example.ui.theme.CyberGold
-import com.example.ui.theme.ElectricCyan
-import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.NeonViolet
-import com.example.ui.theme.NeonVioletGlow
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextWhite
+import com.example.ui.theme.*
 
 @Composable
 fun OnboardingScreen(
-    initialUser: UserProfile,
-    onComplete: (UserProfile) -> Unit,
+    initialUser: UserProfile?,
+    onComplete: (user: UserProfile, cashLiquide: Double, cashMobile: Double, cashFamily: Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var step by remember { mutableIntStateOf(1) }
 
-    var name by remember { mutableStateOf(initialUser.name) }
-    var currency by remember { mutableStateOf(initialUser.currency) }
-    var monthlySalaryStr by remember { mutableStateOf(initialUser.monthlySalary.toInt().toString()) }
-    var payDayStr by remember { mutableStateOf(initialUser.payDayOfMonth.toString()) }
-    var reminderHourStr by remember { mutableStateOf(initialUser.dailyReminderHour.toString()) }
-    var fixedChargesStr by remember { mutableStateOf(initialUser.fixedCharges.toInt().toString()) }
+    // Step 1: Identity & Currency
+    var name by remember { mutableStateOf(initialUser?.name ?: "Alexandre") }
+    var currency by remember { mutableStateOf(initialUser?.currency ?: "FCFA") }
 
-    val handleNext: () -> Unit = {
-        if (step < 4) {
-            step++
-        } else {
-            val sal = monthlySalaryStr.toDoubleOrNull() ?: 2500.0
-            val pd = payDayStr.toIntOrNull() ?: 28
-            val rh = reminderHourStr.toIntOrNull() ?: 20
-            val fc = fixedChargesStr.toDoubleOrNull() ?: 950.0
-            onComplete(
-                initialUser.copy(
-                    name = name.ifBlank { "Alexandre" },
-                    currency = currency.ifBlank { "FCFA" },
-                    monthlySalary = sal,
-                    payDayOfMonth = pd,
-                    dailyReminderHour = rh,
-                    fixedCharges = fc,
-                    isOnboarded = true
-                )
-            )
-        }
-    }
+    // Step 2: Caisse & Argent disponible au départ (PAS de salaire forcé !)
+    var cashLiquideStr by remember { mutableStateOf("0") }
+    var cashMobileStr by remember { mutableStateOf("0") }
+    var cashFamilyStr by remember { mutableStateOf("0") }
 
-    Column(
+    // Step 3: Charges fixes & Reminder
+    var fixedChargesStr by remember { mutableStateOf(initialUser?.fixedCharges?.toInt()?.toString() ?: "0") }
+    var reminderHourStr by remember { mutableStateOf(initialUser?.dailyReminderHour?.toString() ?: "20") }
+
+    val cashLiquide = cashLiquideStr.toDoubleOrNull() ?: 0.0
+    val cashMobile = cashMobileStr.toDoubleOrNull() ?: 0.0
+    val cashFamily = cashFamilyStr.toDoubleOrNull() ?: 0.0
+    val totalCaisse = cashLiquide + cashMobile + cashFamily
+
+    val fixedCharges = fixedChargesStr.toDoubleOrNull() ?: 0.0
+    val reminderHour = reminderHourStr.toIntOrNull()?.coerceIn(0, 23) ?: 20
+
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(BrickBackground)
-            .systemBarsPadding()
-            .imePadding()
-            .padding(horizontal = 20.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .imePadding(),
+        contentAlignment = Alignment.TopCenter
     ) {
-        // Header
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-        ) {
-            BrickLogo(size = 42.dp, showText = true)
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Step Indicator Dots
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..4).forEach { i ->
-                    Box(
-                        modifier = Modifier
-                            .size(if (i == step) 28.dp else 10.dp, 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(
-                                if (i == step) ElectricCyan
-                                else if (i < step) EmeraldSuccess
-                                else BrickSurfaceBorder
-                            )
-                    )
-                }
-            }
-        }
-
-        // Scrollable Content per Step with Continue button directly inside the view
-        Box(
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.TopCenter
+                .widthIn(max = 520.dp)
+                .fillMaxHeight()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AnimatedContent(
-                targetState = step,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                modifier = Modifier.fillMaxWidth()
-            ) { targetStep ->
-                when (targetStep) {
-                    1 -> StepOne(
-                        name = name,
-                        onNameChange = { name = it },
-                        currency = currency,
-                        onCurrencyChange = { currency = it },
-                        onNext = handleNext
-                    )
-                    2 -> StepTwo(
-                        salary = monthlySalaryStr,
-                        onSalaryChange = { monthlySalaryStr = it },
-                        payDay = payDayStr,
-                        onPayDayChange = { payDayStr = it },
-                        currency = currency,
-                        onBack = {
-                            if (step > 1) {
-                                step--
+            // Header with Stepper
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (step > 1) {
+                    IconButton(
+                        onClick = { step-- },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .testTag("onboarding_back_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Retour",
+                            tint = BrickTextPrimary
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.size(44.dp))
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (i in 1..4) {
+                        val isActive = step == i
+                        val isDone = step > i
+                        Box(
+                            modifier = Modifier
+                                .height(6.dp)
+                                .width(if (isActive) 28.dp else 14.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    when {
+                                        isActive -> BrickPrimary
+                                        isDone -> EmeraldSuccess
+                                        else -> BrickSurfaceBorder
+                                    }
+                                )
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Étape $step/4",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = BrickTextMuted,
+                    fontSize = 11.sp
+                )
+            }
+
+            // Scrollable Content Area
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    when (step) {
+                        1 -> StepOneIdentity(
+                            name = name,
+                            onNameChange = { name = it },
+                            currency = currency,
+                            onCurrencyChange = { currency = it },
+                            onNext = { if (name.isNotBlank()) step = 2 }
+                        )
+
+                        2 -> StepTwoCaisseInitiale(
+                            currency = currency,
+                            cashLiquideStr = cashLiquideStr,
+                            onCashLiquideChange = { cashLiquideStr = it },
+                            cashMobileStr = cashMobileStr,
+                            onCashMobileChange = { cashMobileStr = it },
+                            cashFamilyStr = cashFamilyStr,
+                            onCashFamilyChange = { cashFamilyStr = it },
+                            totalCaisse = totalCaisse,
+                            onNext = { step = 3 }
+                        )
+
+                        3 -> StepThreeChargesEtAlertes(
+                            currency = currency,
+                            fixedChargesStr = fixedChargesStr,
+                            onFixedChargesChange = { fixedChargesStr = it },
+                            reminderHourStr = reminderHourStr,
+                            onReminderHourChange = { reminderHourStr = it },
+                            onNext = { step = 4 }
+                        )
+
+                        4 -> StepFourConfirmationCaisse(
+                            name = name,
+                            currency = currency,
+                            totalCaisse = totalCaisse,
+                            cashLiquide = cashLiquide,
+                            cashMobile = cashMobile,
+                            cashFamily = cashFamily,
+                            fixedCharges = fixedCharges,
+                            onFinish = {
+                                val updatedUser = (initialUser ?: UserProfile()).copy(
+                                    name = name.trim().ifEmpty { "Alexandre" },
+                                    currency = currency,
+                                    monthlySalary = 0.0, // Pas de salaire forcé, les paiements s'ajoutent en caisse !
+                                    fixedCharges = fixedCharges,
+                                    dailyReminderHour = reminderHour,
+                                    dailyReminderMinute = 0,
+                                    isOnboarded = true
+                                )
+                                onComplete(updatedUser, cashLiquide, cashMobile, cashFamily)
                             }
-                        },
-                        onNext = handleNext
-                    )
-                    3 -> StepThree(
-                        fixedCharges = fixedChargesStr,
-                        onFixedChargesChange = { fixedChargesStr = it },
-                        reminderHour = reminderHourStr,
-                        onReminderHourChange = { reminderHourStr = it },
-                        currency = currency,
-                        onBack = {
-                            if (step > 1) {
-                                step--
-                            }
-                        },
-                        onNext = handleNext
-                    )
-                    4 -> StepFour(
-                        name = name,
-                        salary = monthlySalaryStr.toDoubleOrNull() ?: 2400.0,
-                        fixedCharges = fixedChargesStr.toDoubleOrNull() ?: 950.0,
-                        currency = currency,
-                        onBack = {
-                            if (step > 1) {
-                                step--
-                            }
-                        },
-                        onComplete = handleNext
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -203,432 +205,602 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun StepOne(
+private fun StepOneIdentity(
     name: String,
     onNameChange: (String) -> Unit,
     currency: String,
     onCurrencyChange: (String) -> Unit,
     onNext: () -> Unit
 ) {
+    val currencies = listOf("FCFA", "EUR", "USD", "GNF", "NGN", "CDF")
+
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
+        BrickLogo(size = 72.dp)
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Bienvenue sur BRICK",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextWhite
+            text = "Bienvenue dans BRICK",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = BrickTextPrimary
         )
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "L'application pour stopper les dépenses compulsives et bâtir tes fondations financières solides.",
-            fontSize = 13.sp,
-            color = TextMuted,
-            lineHeight = 18.sp
+            text = "La forteresse de vos finances personnelles et de votre caisse",
+            style = MaterialTheme.typography.bodyMedium,
+            color = BrickTextMuted,
+            fontSize = 13.sp
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
+        // Name input
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
-            label = { Text("Comment t'appelles-tu ?") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("onboarding_name_input"),
+            label = { Text("Votre prénom ou nom", color = BrickTextMuted) },
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = BrickPrimary) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onNext() }),
+            shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = BrickSurfaceBorder
-            ),
-            modifier = Modifier.fillMaxWidth().testTag("onboard_name_input")
+                focusedBorderColor = BrickPrimary,
+                unfocusedBorderColor = BrickSurfaceBorder,
+                focusedTextColor = BrickTextPrimary,
+                unfocusedTextColor = BrickTextPrimary
+            )
         )
 
-        // Currency Picker
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Currency selection
         Text(
-            text = "Choisis ta devise principale :",
-            fontSize = 12.sp,
-            color = TextMuted,
+            text = "Votre devise principale",
+            style = MaterialTheme.typography.labelMedium,
+            color = BrickTextMuted,
             modifier = Modifier.align(Alignment.Start)
         )
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("FCFA", "€", "$", "CHF", "£").forEach { cur ->
-                val isSel = currency == cur
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (isSel) ElectricCyan else BrickSurfaceElevated)
-                        .border(1.dp, if (isSel) ElectricCyan else BrickSurfaceBorder, RoundedCornerShape(10.dp))
-                        .clickable { onCurrencyChange(cur) },
-                    contentAlignment = Alignment.Center
-                ) {
+            currencies.take(3).forEach { cur ->
+                CurrencyPill(
+                    label = cur,
+                    isSelected = currency == cur,
+                    onClick = { onCurrencyChange(cur) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            currencies.drop(3).forEach { cur ->
+                CurrencyPill(
+                    label = cur,
+                    isSelected = currency == cur,
+                    onClick = { onCurrencyChange(cur) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(36.dp))
+
+        Button(
+            onClick = onNext,
+            enabled = name.isNotBlank(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("onboarding_step1_next_btn"),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrickPrimary)
+        ) {
+            Text("Continuer vers ma caisse", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF0A0E1A))
+        }
+    }
+}
+
+@Composable
+private fun CurrencyPill(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .height(44.dp)
+            .clickable { onClick() },
+        color = if (isSelected) BrickPrimary.copy(alpha = 0.2f) else BrickSurfaceElevated,
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 1.5.dp else 1.dp,
+            color = if (isSelected) BrickPrimary else BrickSurfaceBorder
+        )
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = label,
+                color = if (isSelected) BrickPrimary else BrickTextPrimary,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun StepTwoCaisseInitiale(
+    currency: String,
+    cashLiquideStr: String,
+    onCashLiquideChange: (String) -> Unit,
+    cashMobileStr: String,
+    onCashMobileChange: (String) -> Unit,
+    cashFamilyStr: String,
+    onCashFamilyChange: (String) -> Unit,
+    totalCaisse: Double,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Surface(
+            color = BrickSurfaceElevated,
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BrickPrimary.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "💡", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
                     Text(
-                        text = cur,
-                        fontSize = 12.sp,
+                        text = "Pas de salaire fixe demandé ici !",
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isSel) BrickBackground else TextWhite,
-                        maxLines = 1
+                        color = BrickPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Chaque paiement reçu s'ajoutera au fur et à mesure. Pour démarrer, faites simplement le point sur votre caisse actuelle.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BrickTextMuted,
+                        fontSize = 12.sp
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Direct Continue Button moved up right below fields
+        Text(
+            text = "Combien as-tu dans la caisse aujourd'hui ?",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = BrickTextPrimary,
+            fontSize = 17.sp
+        )
+        Text(
+            text = "Indiquez l'argent réellement disponible maintenant",
+            style = MaterialTheme.typography.bodySmall,
+            color = BrickTextMuted,
+            fontSize = 12.sp
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Field 1: Espèces / Liquide
+        CaisseInputField(
+            title = "💵 Espèces / En poche & caisse",
+            subtitle = "Billets et pièces à portée de main",
+            value = cashLiquideStr,
+            onValueChange = onCashLiquideChange,
+            currency = currency,
+            testTag = "input_cash_liquide"
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Field 2: Mobile Money & Banques
+        CaisseInputField(
+            title = "📱 Mobile Money & Comptes bancaires",
+            subtitle = "Wave, Orange Money, Moov, MTN, Banque",
+            value = cashMobileStr,
+            onValueChange = onCashMobileChange,
+            currency = currency,
+            testTag = "input_cash_mobile"
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Field 3: Tontine & Famille / Cercles
+        CaisseInputField(
+            title = "🤝 Tontines & Argent placé / Famille",
+            subtitle = "Fonds en réserve chez des proches ou cotisations",
+            value = cashFamilyStr,
+            onValueChange = onCashFamilyChange,
+            currency = currency,
+            testTag = "input_cash_family"
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Live Total Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color(0xFF131B2E),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, CyberGold)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "TOTAL DISPONIBLE EN CAISSE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = CyberGold,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "${String.format("%,.0f", totalCaisse)} $currency",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                        color = BrickTextPrimary
+                    )
+                }
+
+                Text(text = "🛡️", fontSize = 28.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Button(
             onClick = onNext,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
-                .testTag("onboarding_next_btn"),
+                .height(52.dp)
+                .testTag("onboarding_step2_next_btn"),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
+            colors = ButtonDefaults.buttonColors(containerColor = BrickPrimary)
+        ) {
+            Text("Enregistrer ma caisse", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF0A0E1A))
+        }
+    }
+}
+
+@Composable
+private fun CaisseInputField(
+    title: String,
+    subtitle: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    currency: String,
+    testTag: String
+) {
+    Surface(
+        color = BrickSurface,
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BrickSurfaceBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = BrickTextMuted, fontSize = 11.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = if (value == "0") "" else value,
+                onValueChange = { newVal ->
+                    val filtered = newVal.filter { it.isDigit() }
+                    onValueChange(if (filtered.isEmpty()) "0" else filtered)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(testTag),
+                placeholder = { Text("0 $currency", color = BrickTextMuted) },
+                trailingIcon = { Text(currency, color = BrickPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 12.dp)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BrickPrimary,
+                    unfocusedBorderColor = BrickSurfaceBorder,
+                    focusedTextColor = BrickTextPrimary,
+                    unfocusedTextColor = BrickTextPrimary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun StepThreeChargesEtAlertes(
+    currency: String,
+    fixedChargesStr: String,
+    onFixedChargesChange: (String) -> Unit,
+    reminderHourStr: String,
+    onReminderHourChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Charges fixes & Heure du bilan",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = BrickTextPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Facultatif : anticipez vos dépenses incompressibles du mois",
+            style = MaterialTheme.typography.bodySmall,
+            color = BrickTextMuted,
+            fontSize = 12.sp
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = if (fixedChargesStr == "0") "" else fixedChargesStr,
+            onValueChange = { newVal ->
+                val filtered = newVal.filter { it.isDigit() }
+                onFixedChargesChange(if (filtered.isEmpty()) "0" else filtered)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("onboarding_fixed_charges_input"),
+            label = { Text("Total des charges fixes mensuelles ($currency)", color = BrickTextMuted) },
+            placeholder = { Text("Ex: 50000 (loyer, factures)", color = BrickTextMuted) },
+            leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = BrickSecondary) },
+            trailingIcon = { Text(currency, color = BrickTextMuted, modifier = Modifier.padding(end = 12.dp)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = BrickPrimary,
+                unfocusedBorderColor = BrickSurfaceBorder,
+                focusedTextColor = BrickTextPrimary,
+                unfocusedTextColor = BrickTextPrimary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = reminderHourStr,
+            onValueChange = { newVal ->
+                val filtered = newVal.filter { it.isDigit() }
+                if (filtered.length <= 2) {
+                    onReminderHourChange(filtered)
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("onboarding_reminder_hour_input"),
+            label = { Text("Heure du point de caisse du soir (0-23h)", color = BrickTextMuted) },
+            leadingIcon = { Icon(Icons.Default.Notifications, contentDescription = null, tint = CyberGold) },
+            trailingIcon = { Text("h00", color = BrickTextMuted, modifier = Modifier.padding(end = 12.dp)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = BrickPrimary,
+                unfocusedBorderColor = BrickSurfaceBorder,
+                focusedTextColor = BrickTextPrimary,
+                unfocusedTextColor = BrickTextPrimary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 50/30/20 summary reminder
+        Surface(
+            color = BrickSurfaceElevated,
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BrickSurfaceBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = "🏛️ Principe de gestion BRICK 50/30/20",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = BrickTextPrimary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "• 50% Besoins vitaux (Alimentation, transport, toit)\n• 30% Envies (Plaisirs maîtrisés)\n• 20% Épargne & Tontine (Sécurité et investissement)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BrickTextMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("onboarding_step3_next_btn"),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrickPrimary)
+        ) {
+            Text("Voir le récapitulatif de ma caisse", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF0A0E1A))
+        }
+    }
+}
+
+@Composable
+private fun StepFourConfirmationCaisse(
+    name: String,
+    currency: String,
+    totalCaisse: Double,
+    cashLiquide: Double,
+    cashMobile: Double,
+    cashFamily: Double,
+    fixedCharges: Double,
+    onFinish: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Big Celebration & Confirmation Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = Color(0xFF131B2E),
+            border = androidx.compose.foundation.BorderStroke(
+                width = 2.dp,
+                brush = Brush.horizontalGradient(listOf(BrickPrimary, CyberGold))
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "🛡️", fontSize = 44.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Voilà ce qui est dans ta caisse au départ !",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = BrickPrimary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "${String.format("%,.0f", totalCaisse)} $currency",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = CyberGold,
+                    fontSize = 28.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = BrickSurfaceBorder)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Breakdown of starting caisse
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "💵 Espèces / En poche :", style = MaterialTheme.typography.bodySmall, color = BrickTextMuted)
+                    Text(text = "${String.format("%,.0f", cashLiquide)} $currency", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "📱 Mobile Money & Banque :", style = MaterialTheme.typography.bodySmall, color = BrickTextMuted)
+                    Text(text = "${String.format("%,.0f", cashMobile)} $currency", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "🤝 Tontines & Famille :", style = MaterialTheme.typography.bodySmall, color = BrickTextMuted)
+                    Text(text = "${String.format("%,.0f", cashFamily)} $currency", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Pedagogical reminder card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = BrickSurfaceElevated,
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BrickSurfaceBorder)
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(text = "✨", fontSize = 22.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Votre caisse de départ est prête !",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = EmeraldSuccess
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Dès qu'un paiement, salaire ou vente arrive, cliquez sur ➕ pour l'ajouter en 2 secondes. Votre caisse restera toujours exacte et votre reste à vivre calculé en temps réel !",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BrickTextMuted,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Button(
+            onClick = onFinish,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+                .testTag("onboarding_complete_btn"),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
         ) {
             Text(
-                text = "Continuer",
-                color = BrickBackground,
-                fontWeight = FontWeight.ExtraBold,
+                text = "Valider et entrer dans ma forteresse 🚀",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
                 fontSize = 15.sp
             )
-            Spacer(modifier = Modifier.width(6.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = BrickBackground
-            )
         }
-    }
-}
-
-@Composable
-private fun StepTwo(
-    salary: String,
-    onSalaryChange: (String) -> Unit,
-    payDay: String,
-    onPayDayChange: (String) -> Unit,
-    currency: String,
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Text(
-            text = "Tes Revenus Réguliers",
-            fontSize = 21.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextWhite
-        )
-        Text(
-            text = "Combien rentre chaque mois dans ta poche ? C'est la base pour calculer ton Reste à Vivre.",
-            fontSize = 13.sp,
-            color = TextMuted,
-            lineHeight = 18.sp
-        )
-
-        OutlinedTextField(
-            value = salary,
-            onValueChange = onSalaryChange,
-            label = { Text("Salaire mensuel net ($currency)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = BrickSurfaceBorder
-            ),
-            modifier = Modifier.fillMaxWidth().testTag("onboard_salary_input")
-        )
-
-        OutlinedTextField(
-            value = payDay,
-            onValueChange = onPayDayChange,
-            label = { Text("Jour du virement de la paie (1 - 31)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onNext() }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = BrickSurfaceBorder
-            ),
-            modifier = Modifier.fillMaxWidth().testTag("onboard_payday_input")
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Direct Buttons Row moved up
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(BrickSurfaceElevated)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Précédent",
-                    tint = TextWhite
-                )
-            }
-
-            Button(
-                onClick = onNext,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp)
-                    .testTag("onboarding_next_btn"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
-            ) {
-                Text(
-                    text = "Continuer",
-                    color = BrickBackground,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 15.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = BrickBackground
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StepThree(
-    fixedCharges: String,
-    onFixedChargesChange: (String) -> Unit,
-    reminderHour: String,
-    onReminderHourChange: (String) -> Unit,
-    currency: String,
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Text(
-            text = "Charges & Rappel Quotidien",
-            fontSize = 21.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextWhite
-        )
-        Text(
-            text = "Loyer, factures, électricité, abonnements… et l'heure du rappel quotidien chaque soir.",
-            fontSize = 13.sp,
-            color = TextMuted,
-            lineHeight = 18.sp
-        )
-
-        OutlinedTextField(
-            value = fixedCharges,
-            onValueChange = onFixedChargesChange,
-            label = { Text("Total des charges fixes mensuelles ($currency)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = BrickSurfaceBorder
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = reminderHour,
-            onValueChange = onReminderHourChange,
-            label = { Text("Heure du rappel chaque soir (ex: 20 pour 20h)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onNext() }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = BrickSurfaceBorder
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Direct Buttons Row moved up
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(BrickSurfaceElevated)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Précédent",
-                    tint = TextWhite
-                )
-            }
-
-            Button(
-                onClick = onNext,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp)
-                    .testTag("onboarding_next_btn"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan)
-            ) {
-                Text(
-                    text = "Continuer",
-                    color = BrickBackground,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 15.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = BrickBackground
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StepFour(
-    name: String,
-    salary: Double,
-    fixedCharges: Double,
-    currency: String,
-    onBack: () -> Unit,
-    onComplete: () -> Unit
-) {
-    val needsTarget = salary * 0.50
-    val wantsTarget = salary * 0.30
-    val savingsTarget = salary * 0.20
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Text(
-            text = "Ton Plan 50 / 30 / 20 est Prêt !",
-            fontSize = 21.sp,
-            fontWeight = FontWeight.Bold,
-            color = CyberGold
-        )
-        Text(
-            text = "$name, voici ton nouveau cadre de liberté financière :",
-            fontSize = 13.sp,
-            color = TextMuted
-        )
-
-        NeonGlassCard(borderColor = ElectricCyan) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlanRow(label = "🏠 Besoins (50% max)", amount = needsTarget, currency = currency, color = ElectricCyan)
-                PlanRow(label = "🍸 Envies (30% max)", amount = wantsTarget, currency = currency, color = NeonVioletGlow)
-                PlanRow(label = "👑 Se Payer en Premier (20% min)", amount = savingsTarget, currency = currency, color = CyberGold)
-            }
-        }
-
-        Text(
-            text = "💡 'Ce n'est pas combien tu gagnes qui compte, c'est combien tu gardes et comment cet argent travaille pour toi.' — Robert Kiyosaki",
-            fontSize = 12.sp,
-            color = TextMuted,
-            lineHeight = 16.sp
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Complete Button Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(BrickSurfaceElevated)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Précédent",
-                    tint = TextWhite
-                )
-            }
-
-            Button(
-                onClick = onComplete,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp)
-                    .testTag("onboarding_next_btn"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
-            ) {
-                Text(
-                    text = "Bâtir mes fondations",
-                    color = BrickBackground,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 15.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = BrickBackground
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlanRow(label: String, amount: Double, currency: String, color: androidx.compose.ui.graphics.Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, fontSize = 12.sp, color = TextWhite, fontWeight = FontWeight.Medium)
-        Text(text = "${amount.toInt()} $currency / mois", fontSize = 13.sp, color = color, fontWeight = FontWeight.Bold)
     }
 }

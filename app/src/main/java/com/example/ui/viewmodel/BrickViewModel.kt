@@ -3,28 +3,15 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.ai.AiCoachService
-import com.example.ai.BrickBadge
-import com.example.ai.CoachMessage
-import com.example.ai.FinancialSnapshot
-import com.example.ai.LocalFinancialEngine
-import com.example.ai.PurchaseSimulationResult
+import com.example.ai.*
 import com.example.data.db.BrickDatabase
 import com.example.data.model.AssetLiability
 import com.example.data.model.FinancialGoal
 import com.example.data.model.TransactionEntity
 import com.example.data.model.UserProfile
 import com.example.data.repository.BrickRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.example.notification.DailyEveningRecapWorker
 import java.util.Calendar
 
 class BrickViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,20 +21,41 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         userDao = db.userDao(),
         transactionDao = db.transactionDao(),
         goalDao = db.goalDao(),
-        assetDao = db.assetDao()
+        assetDao = db.assetDao(),
+        categoryDao = db.categoryDao(),
+        budgetSettingsDao = db.budgetSettingsDao()
     )
-    private val aiCoachService = AiCoachService(application)
+    private val aiCoachService = AiCoachService()
 
-    // Active bottom navigation screen
+    val userProfile: StateFlow<UserProfile?> = repository.userProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val transactions: StateFlow<List<TransactionEntity>> = repository.allTransactions
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val goals: StateFlow<List<FinancialGoal>> = repository.allGoals
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val assetsLiabilities: StateFlow<List<AssetLiability>> = repository.allAssetsLiabilities
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val categories = repository.allCategories
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val budgetSettings = repository.budgetSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     private val _currentScreen = MutableStateFlow(0)
     val currentScreen: StateFlow<Int> = _currentScreen.asStateFlow()
 
-    // Dialogs & Modals
-    private val _addExpenseInitialMode = MutableStateFlow("DEPENSE")
-    val addExpenseInitialMode: StateFlow<String> = _addExpenseInitialMode.asStateFlow()
+    private val _isPinLocked = MutableStateFlow(false)
+    val isPinLocked: StateFlow<Boolean> = _isPinLocked.asStateFlow()
 
     private val _showAddExpenseDialog = MutableStateFlow(false)
     val showAddExpenseDialog: StateFlow<Boolean> = _showAddExpenseDialog.asStateFlow()
+
+    private val _addExpenseInitialMode = MutableStateFlow("DEPENSE")
+    val addExpenseInitialMode: StateFlow<String> = _addExpenseInitialMode.asStateFlow()
 
     private val _showQuickAddSheet = MutableStateFlow(false)
     val showQuickAddSheet: StateFlow<Boolean> = _showQuickAddSheet.asStateFlow()
@@ -58,20 +66,15 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
     private val _showPurchaseSimulator = MutableStateFlow(false)
     val showPurchaseSimulator: StateFlow<Boolean> = _showPurchaseSimulator.asStateFlow()
 
-    private val _isPinLocked = MutableStateFlow(false)
-    val isPinLocked: StateFlow<Boolean> = _isPinLocked.asStateFlow()
-
-    // Simulation state
     private val _simulationResult = MutableStateFlow<PurchaseSimulationResult?>(null)
     val simulationResult: StateFlow<PurchaseSimulationResult?> = _simulationResult.asStateFlow()
 
-    // Chat messages
     private val _coachMessages = MutableStateFlow<List<CoachMessage>>(
         listOf(
             CoachMessage(
+                id = "1",
                 sender = "COACH",
-                text = "Bienvenue sur BRICK ! Je suis ton coach financier personnel.\nMon objectif : t'aider à stopper les dépenses compulsives, séparer impitoyablement tes Besoins de tes Envies, et bâtir de solides fondations (Actifs vs Passifs). Comment puis-je t'aider aujourd'hui ?",
-                source = "LOCAL"
+                text = "Bienvenue dans BRICK ! Je suis votre conseiller financier personnel. Posez-moi vos questions sur votre budget, vos dettes, vos tontines ou vos achats à venir."
             )
         )
     )
@@ -80,62 +83,12 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
     private val _isCoachTyping = MutableStateFlow(false)
     val isCoachTyping: StateFlow<Boolean> = _isCoachTyping.asStateFlow()
 
-    // Database Flows
-    val userProfile: StateFlow<UserProfile> = repository.userProfile
-        .map { it ?: UserProfile() }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = UserProfile()
-        )
+    init {
+        viewModelScope.launch {
+            repository.initializeDefaultDataIfEmpty()
+        }
+    }
 
-    val transactions: StateFlow<List<TransactionEntity>> = repository.allTransactions
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    val goals: StateFlow<List<FinancialGoal>> = repository.allGoals
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    val assetsLiabilities: StateFlow<List<AssetLiability>> = repository.allAssetsLiabilities
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    // Dynamic Financial Snapshot computed reactively
-    val financialSnapshot: StateFlow<FinancialSnapshot> = combine(
-        userProfile,
-        transactions,
-        assetsLiabilities,
-        goals
-    ) { user, txs, assets, gls ->
-        LocalFinancialEngine.calculateSnapshot(user, txs, assets, gls)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = LocalFinancialEngine.calculateSnapshot(UserProfile(), emptyList())
-    )
-
-    val badges: StateFlow<List<BrickBadge>> = combine(
-        financialSnapshot,
-        userProfile
-    ) { snap, user ->
-        LocalFinancialEngine.getBadges(snap, user.streakDays)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
-    // Today & Yesterday Flows for Quick Add and Evening Recap
     val todayTransactions: StateFlow<List<TransactionEntity>> = transactions.map { list ->
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -143,62 +96,59 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val startOfToday = cal.timeInMillis
-        list.filter { it.timestamp >= startOfToday }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+        val todayStart = cal.timeInMillis
+        list.filter { it.timestamp >= todayStart }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val todayTotalSpent: StateFlow<Double> = todayTransactions.map { list ->
-        list.sumOf { it.amount }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0.0
-    )
+        list.filter { it.type == "DEPENSE" }.sumOf { it.amount }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val yesterdayTotalSpent: StateFlow<Double> = transactions.map { list ->
-        val cal = Calendar.getInstance().apply {
+        val calStart = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, -1)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val startOfToday = cal.timeInMillis
-        val startOfYesterday = startOfToday - (24L * 3600 * 1000)
-        list.filter { it.timestamp in startOfYesterday until startOfToday }.sumOf { it.amount }
+        val calEnd = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, -1)
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }
+        list.filter { it.type == "DEPENSE" && it.timestamp in calStart.timeInMillis..calEnd.timeInMillis }
+            .sumOf { it.amount }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val financialSnapshot: StateFlow<FinancialSnapshot> = combine(
+        userProfile,
+        transactions,
+        assetsLiabilities
+    ) { user, txs, assets ->
+        LocalFinancialEngine.calculateFinancialSnapshot(user, txs, assets)
     }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0.0
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        FinancialSnapshot(0.0, 0.0, 50, 0.0, emptyList())
     )
 
-    init {
-        viewModelScope.launch {
-            try {
-                repository.initializeDefaultDataIfEmpty()
-                val user = repository.userProfile.firstOrNull() ?: UserProfile()
-                DailyEveningRecapWorker.schedule(
-                    application,
-                    user.dailyReminderHour,
-                    user.dailyReminderMinute
-                )
-            } catch (e: Exception) {
-                android.util.Log.e("BrickViewModel", "Error in init: ${e.message}", e)
-            }
-        }
-    }
-
-    fun isOnline(): Boolean = aiCoachService.isOnline()
+    val badges: StateFlow<List<BrickBadge>> = combine(
+        userProfile,
+        transactions,
+        goals
+    ) { user, txs, g ->
+        LocalFinancialEngine.evaluateBadges(user, txs, g)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectScreen(index: Int) {
         _currentScreen.value = index
     }
 
-    fun openAddExpenseDialog(flowMode: String = "DEPENSE") {
-        _addExpenseInitialMode.value = flowMode
+    fun openAddExpenseDialog(mode: String = "DEPENSE") {
+        _addExpenseInitialMode.value = mode
         _showAddExpenseDialog.value = true
     }
 
@@ -231,22 +181,20 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         _showPurchaseSimulator.value = false
     }
 
-    fun toggleHideAmounts() {
+    fun unlockPin() {
+        _isPinLocked.value = false
+    }
+
+    fun updateProfile(profile: UserProfile) {
         viewModelScope.launch {
-            val current = userProfile.value
-            repository.saveUserProfile(current.copy(hideAmounts = !current.hideAmounts))
+            repository.saveUserProfile(profile)
         }
     }
 
-    fun updateProfile(updated: UserProfile) {
+    fun toggleHideAmounts() {
+        val current = userProfile.value ?: return
         viewModelScope.launch {
-            repository.saveUserProfile(updated)
-            DailyEveningRecapWorker.schedule(
-                getApplication(),
-                updated.dailyReminderHour,
-                updated.dailyReminderMinute
-            )
-            com.example.widget.BrickResteAVivreWidgetProvider.updateAllWidgets(getApplication())
+            repository.saveUserProfile(current.copy(hideAmounts = !current.hideAmounts))
         }
     }
 
@@ -255,44 +203,38 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         amount: Double,
         category: String,
         type: String,
-        priority: String = "UTILE",
+        priority: String = "NEEDS",
         note: String = "",
         isRecurring: Boolean = false
     ) {
         viewModelScope.launch {
-            val t = TransactionEntity(
-                title = title.ifBlank { "Dépense $category" },
-                amount = amount,
-                category = category,
-                type = type,
-                priority = priority,
-                note = note,
-                isRecurring = isRecurring
+            repository.addTransaction(
+                TransactionEntity(
+                    title = title,
+                    amount = amount,
+                    category = category,
+                    type = type,
+                    priority = priority,
+                    note = note,
+                    isRecurring = isRecurring
+                )
             )
-            repository.addTransaction(t)
-
-            // Update streak if needed
-            val current = userProfile.value
-            repository.saveUserProfile(current.copy(streakDays = current.streakDays + 1))
-            com.example.widget.BrickResteAVivreWidgetProvider.updateAllWidgets(getApplication())
-            closeAddExpenseDialog()
         }
     }
 
     fun deleteTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
             repository.deleteTransaction(transaction)
-            com.example.widget.BrickResteAVivreWidgetProvider.updateAllWidgets(getApplication())
         }
     }
 
-    fun addGoal(title: String, target: Double, current: Double, category: String) {
+    fun addGoal(title: String, targetAmount: Double, currentAmount: Double = 0.0, category: String = "EPARGNE") {
         viewModelScope.launch {
             repository.addGoal(
                 FinancialGoal(
                     title = title,
-                    targetAmount = target,
-                    currentAmount = current,
+                    targetAmount = targetAmount,
+                    currentAmount = currentAmount,
                     category = category
                 )
             )
@@ -311,7 +253,14 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addAssetLiability(name: String, type: String, category: String, value: Double, cashflow: Double, note: String) {
+    fun addAssetLiability(
+        name: String,
+        type: String,
+        category: String,
+        value: Double,
+        monthlyCashflow: Double = 0.0,
+        note: String = ""
+    ) {
         viewModelScope.launch {
             repository.addAssetLiability(
                 AssetLiability(
@@ -319,7 +268,7 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
                     type = type,
                     category = category,
                     value = value,
-                    monthlyCashflow = cashflow,
+                    monthlyCashflow = monthlyCashflow,
                     note = note
                 )
             )
@@ -332,43 +281,30 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun runSimulation(amount: Double, title: String) {
-        val res = LocalFinancialEngine.simulatePurchase(
-            amount = amount,
-            title = title,
-            user = userProfile.value,
-            snapshot = financialSnapshot.value
-        )
-        _simulationResult.value = res
-    }
-
-    fun askCoach(query: String) {
-        if (query.isBlank()) return
-        val userMsg = CoachMessage(sender = "USER", text = query)
-        _coachMessages.value = _coachMessages.value + userMsg
+    fun askCoach(userMessage: String) {
+        if (userMessage.isBlank()) return
+        val current = _coachMessages.value.toMutableList()
+        current.add(CoachMessage(id = System.currentTimeMillis().toString(), sender = "USER", text = userMessage))
+        _coachMessages.value = current
         _isCoachTyping.value = true
 
         viewModelScope.launch {
-            val reply = aiCoachService.askCoach(
-                userMessage = query,
-                user = userProfile.value,
-                snapshot = financialSnapshot.value,
-                transactions = transactions.value
-            )
+            val reply = aiCoachService.askCoach(userMessage, userProfile.value, financialSnapshot.value)
+            val updated = _coachMessages.value.toMutableList()
+            updated.add(CoachMessage(id = (System.currentTimeMillis() + 1).toString(), sender = "COACH", text = reply))
+            _coachMessages.value = updated
             _isCoachTyping.value = false
-            _coachMessages.value = _coachMessages.value + reply
         }
+    }
+
+    fun simulatePurchase(amount: Double, title: String) {
+        val result = LocalFinancialEngine.simulatePurchase(userProfile.value, financialSnapshot.value, amount, title)
+        _simulationResult.value = result
     }
 
     fun resetData() {
         viewModelScope.launch {
             repository.resetAllData()
-            _coachMessages.value = listOf(
-                CoachMessage(
-                    sender = "COACH",
-                    text = "Données réinitialisées. Prêt à repartir sur des bases financières solides !"
-                )
-            )
         }
     }
 }

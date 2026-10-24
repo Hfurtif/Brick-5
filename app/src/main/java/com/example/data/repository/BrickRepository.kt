@@ -1,26 +1,68 @@
 package com.example.data.repository
 
-import com.example.data.db.AssetDao
-import com.example.data.db.GoalDao
-import com.example.data.db.TransactionDao
-import com.example.data.db.UserDao
-import com.example.data.model.AssetLiability
-import com.example.data.model.FinancialGoal
-import com.example.data.model.TransactionEntity
-import com.example.data.model.UserProfile
+import com.example.data.db.*
+import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
-import java.util.Calendar
+import kotlinx.coroutines.flow.emptyFlow
 
 class BrickRepository(
     private val userDao: UserDao,
     private val transactionDao: TransactionDao,
     private val goalDao: GoalDao,
-    private val assetDao: AssetDao
+    private val assetDao: AssetDao,
+    private val categoryDao: CategoryDao? = null,
+    private val budgetSettingsDao: BudgetSettingsDao? = null
 ) {
     val userProfile: Flow<UserProfile?> = userDao.getUserProfile()
     val allTransactions: Flow<List<TransactionEntity>> = transactionDao.getAllTransactions()
     val allGoals: Flow<List<FinancialGoal>> = goalDao.getAllGoals()
     val allAssetsLiabilities: Flow<List<AssetLiability>> = assetDao.getAllAssetsLiabilities()
+    val allCategories: Flow<List<CategoryEntity>> = categoryDao?.getAllCategories() ?: emptyFlow()
+    val budgetSettings: Flow<BudgetSettingsEntity?> = budgetSettingsDao?.getBudgetSettings() ?: emptyFlow()
+
+    fun getTransactionsBetween(startTime: Long, endTime: Long): Flow<List<TransactionEntity>> {
+        return transactionDao.getTransactionsBetween(startTime, endTime)
+    }
+
+    fun getSpentByPriorityBetween(priority: String, startTime: Long, endTime: Long): Flow<Double?> {
+        return transactionDao.getSpentByPriorityBetween(priority, startTime, endTime)
+    }
+
+    fun getTotalSpentBetween(startTime: Long, endTime: Long): Flow<Double?> {
+        return transactionDao.getTotalSpentBetween(startTime, endTime)
+    }
+
+    fun getTotalIncomeBetween(startTime: Long, endTime: Long): Flow<Double?> {
+        return transactionDao.getTotalIncomeBetween(startTime, endTime)
+    }
+
+    fun getTransactionsByAssetClassification(isAsset: Boolean): Flow<List<TransactionEntity>> {
+        return transactionDao.getTransactionsByAssetClassification(isAsset)
+    }
+
+    fun getTransactionsByDateRange(startTime: Long, endTime: Long): Flow<List<TransactionEntity>> {
+        return transactionDao.getTransactionsByDateRange(startTime, endTime)
+    }
+
+    fun getCategoriesByBucket(bucket: String): Flow<List<CategoryEntity>> {
+        return categoryDao?.getCategoriesByBucket(bucket) ?: emptyFlow()
+    }
+
+    suspend fun addCategory(category: CategoryEntity): Long {
+        return categoryDao?.insertCategory(category) ?: -1L
+    }
+
+    suspend fun deleteCategory(category: CategoryEntity) {
+        categoryDao?.deleteCategory(category)
+    }
+
+    suspend fun saveBudgetSettings(settings: BudgetSettingsEntity) {
+        budgetSettingsDao?.insertOrUpdate(settings)
+    }
+
+    suspend fun getBudgetSettingsDirect(): BudgetSettingsEntity? {
+        return budgetSettingsDao?.getBudgetSettingsDirect()
+    }
 
     suspend fun saveUserProfile(profile: UserProfile) {
         userDao.insertOrUpdateProfile(profile)
@@ -55,48 +97,34 @@ class BrickRepository(
     }
 
     suspend fun resetAllData() {
+        userDao.clearAll()
         transactionDao.clearAll()
         goalDao.clearAll()
         assetDao.clearAll()
-        val defaultProfile = UserProfile(
-            name = "",
-            currency = "FCFA",
-            monthlySalary = 350000.0,
-            payDayOfMonth = 28,
-            dailyReminderHour = 20,
-            dailyReminderMinute = 0,
-            fixedCharges = 120000.0,
-            needsBudgetPercentage = 50,
-            wantsBudgetPercentage = 30,
-            savingsBudgetPercentage = 20,
-            payYourselfFirstPercentage = 20,
-            isOnboarded = false,
-            biometricEnabled = false,
-            streakDays = 0
-        )
-        userDao.insertOrUpdateProfile(defaultProfile)
+        categoryDao?.clearAll()
+        budgetSettingsDao?.clearAll()
+        initializeDefaultDataIfEmpty()
     }
 
     suspend fun initializeDefaultDataIfEmpty() {
-        val existingUser = userDao.getUserProfileDirect()
-        if (existingUser == null) {
-            val profile = UserProfile(
-                name = "",
+        val existing = userDao.getUserProfileDirect()
+        if (existing == null) {
+            val defaultUser = UserProfile(
+                id = 1,
+                name = "Alexandre",
                 currency = "FCFA",
-                monthlySalary = 350000.0,
+                monthlySalary = 0.0,
                 payDayOfMonth = 28,
                 dailyReminderHour = 20,
                 dailyReminderMinute = 0,
-                fixedCharges = 120000.0,
+                fixedCharges = 0.0,
                 needsBudgetPercentage = 50,
                 wantsBudgetPercentage = 30,
                 savingsBudgetPercentage = 20,
-                payYourselfFirstPercentage = 20,
-                isOnboarded = false,
-                biometricEnabled = false,
-                streakDays = 0
+                payYourselfFirstPercentage = 10,
+                isOnboarded = false
             )
-            userDao.insertOrUpdateProfile(profile)
+            userDao.insertOrUpdateProfile(defaultUser)
         }
     }
 }

@@ -6,8 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
+import com.aistudio.brick.finances.R
 import com.example.QuickAddActivity
-import com.example.R
 
 class BrickQuickWidgetProvider : AppWidgetProvider() {
 
@@ -16,12 +16,11 @@ class BrickQuickWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        for (widgetId in appWidgetIds) {
+        for (appWidgetId in appWidgetIds) {
             val intent = Intent(context, QuickAddActivity::class.java).apply {
                 action = "com.example.brick.ACTION_QUICK_ADD_FLOATING"
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 0,
@@ -33,7 +32,7 @@ class BrickQuickWidgetProvider : AppWidgetProvider() {
                 setOnClickPendingIntent(R.id.widget_root, pendingIntent)
             }
 
-            appWidgetManager.updateAppWidget(widgetId, views)
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
 }

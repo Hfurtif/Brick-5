@@ -1,286 +1,444 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ai.FinancialSnapshot
-import com.example.data.model.TransactionEntity
-import com.example.data.model.UserProfile
-import com.example.ui.components.DonutBreakdownChart
-import com.example.ui.components.ExplanationCalloutCard
-import com.example.ui.components.NeonGlassCard
-import com.example.ui.components.SpendingTrendCurve
-import com.example.ui.components.WeeklyHeatmap
-import com.example.ui.theme.AmberWarning
-import com.example.ui.theme.BrickBackground
-import com.example.ui.theme.BrickSurfaceBorder
-import com.example.ui.theme.BrickSurfaceElevated
-import com.example.ui.theme.CoralDanger
-import com.example.ui.theme.CyberGold
-import com.example.ui.theme.ElectricCyan
-import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextWhite
-import kotlin.math.max
+import com.example.ui.components.Donut503020Chart
+import com.example.ui.components.Donut503020Mode
+import com.example.ui.components.FinancialProgressBar
+import com.example.ui.theme.*
+import com.example.ui.viewmodel.*
 
 @Composable
 fun BudgetAnalyticsScreen(
-    user: UserProfile,
-    snapshot: FinancialSnapshot,
-    transactions: List<TransactionEntity>,
+    viewModel: Budget503020ViewModel,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
+    val uiState by viewModel.uiState.collectAsState()
+    var chartMode by remember { mutableStateOf(Donut503020Mode.ACTUAL_SPENT) }
+    var showCustomIncomeDialog by remember { mutableStateOf(false) }
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BrickBackground)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(BrickBackground),
+        contentAlignment = Alignment.TopCenter
     ) {
-        item {
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "Budgets & Analyses",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = TextWhite
-            )
-            Text(
-                text = "Comprendre où part ton argent sans jargon",
-                fontSize = 12.sp,
-                color = TextMuted
-            )
-        }
-
-        // Donut Chart: 50/30/20 breakdown
-        item {
-            NeonGlassCard {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "RÉPARTITION GLOBALE (50 / 30 / 20)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ElectricCyan,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    DonutBreakdownChart(
-                        needsAmount = snapshot.needsSpent,
-                        wantsAmount = snapshot.wantsSpent,
-                        savingsAmount = snapshot.savingsSpent,
-                        currency = user.currency
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "💡 Explication : Tes besoins occupent ${snapshot.needsPercentageActual}% de ton budget, tes envies ${snapshot.wantsPercentageActual}%, et ton épargne ${snapshot.savingsPercentageActual}%.",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                }
-            }
-        }
-
-        // Spending vs Budget Curve
-        item {
-            NeonGlassCard {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "ÉVOLUTION DES DÉPENSES CUMULÉES",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CyberGold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Comparaison en direct avec ton plafond mensuel de revenus",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    SpendingTrendCurve(
-                        transactions = transactions,
-                        monthlyBudget = user.monthlySalary,
-                        currency = user.currency
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "📈 Explication : Tant que la courbe néon reste sous la ligne rouge, ton mois est équilibré. Si la trajectoire monte trop vite, ralentis les envies.",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                }
-            }
-        }
-
-        // Weekly Spending Heatmap
-        item {
-            NeonGlassCard {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "CARTE DE CHALEUR HEBDOMADAIRE",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ElectricCyan,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Quels sont les jours où tu dépenses le plus ?",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    WeeklyHeatmap(
-                        transactions = transactions,
-                        currency = user.currency
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "🗓️ Explication : Les couleurs chaudes indiquent tes pics de sorties. Prévois un budget fixe avant le week-end pour éviter les dérapages.",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                }
-            }
-        }
-
-        // Category Budgets Gauges (80% and 100% alerts)
-        item {
-            NeonGlassCard {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "LIMITES PAR CATÉGORIE & ALERTES",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextWhite,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Aggregate spent by category
-                    val categorySums = transactions.groupBy { it.category }
-                        .mapValues { entry -> entry.value.sumOf { it.amount } }
-
-                    // Example realistic limits based on salary
-                    val categoriesWithLimits = listOf(
-                        Triple("Logement", categorySums["Logement"] ?: 0.0, user.monthlySalary * 0.35),
-                        Triple("Alimentation", categorySums["Alimentation"] ?: 0.0, user.monthlySalary * 0.20),
-                        Triple("Sorties & Loisirs", categorySums["Sorties & Loisirs"] ?: 0.0, user.monthlySalary * 0.12),
-                        Triple("Transports", categorySums["Transports"] ?: 0.0, user.monthlySalary * 0.10),
-                        Triple("Shopping", categorySums["Shopping"] ?: 0.0, user.monthlySalary * 0.08),
-                        Triple("Abonnements", categorySums["Abonnements"] ?: 0.0, 50.0)
-                    )
-
-                    categoriesWithLimits.forEach { (cat, spent, limit) ->
-                        CategoryGaugeItem(
-                            category = cat,
-                            spent = spent,
-                            limit = limit,
-                            currency = user.currency
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 640.dp)
+                .fillMaxHeight(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Règle 50/30/20",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = BrickTextPrimary
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Besoins (50%) • Envies (30%) • Épargne (20%)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BrickTextMuted
+                        )
+                    }
+
+                    Surface(
+                        modifier = Modifier.clickable { showCustomIncomeDialog = true },
+                        color = BrickSurfaceElevated,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, BrickSurfaceBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null, tint = BrickPrimary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (uiState.isCustomIncome) "Revenu ajusté" else "Ajuster base",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = BrickPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // "Ce que ça veut dire" Block
-        item {
-            ExplanationCalloutCard(text = snapshot.plainFrenchSummary)
-        }
+            // Alerts Banners
+            if (uiState.activeAlerts.isNotEmpty()) {
+                items(uiState.activeAlerts, key = { it.id }) { alert ->
+                    val isExceeded = alert.severity == BudgetAlertSeverity.EXCEEDED
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = if (isExceeded) CoralDanger.copy(alpha = 0.15f) else AmberWarning.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, if (isExceeded) CoralDanger else AmberWarning)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(text = if (isExceeded) "🚨" else "⚠️", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = alert.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isExceeded) CoralDanger else AmberWarning
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = alert.message,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BrickTextPrimary,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "💡 ${alert.recommendation}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = BrickTextMuted,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.dismissAlert(alert.id) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Masquer", tint = BrickTextMuted, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
 
-        item {
-            Spacer(modifier = Modifier.height(60.dp))
+            // Donut Chart Container
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = BrickSurfaceElevated,
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.dp, BrickSurfaceBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Toggle Chart Mode (Dépensé Réel vs Règle Cible)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrickSurface)
+                                .padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable { chartMode = Donut503020Mode.ACTUAL_SPENT },
+                                color = if (chartMode == Donut503020Mode.ACTUAL_SPENT) BrickPrimary else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "Dépensé Réel",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (chartMode == Donut503020Mode.ACTUAL_SPENT) Color(0xFF0A0E1A) else BrickTextMuted
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable { chartMode = Donut503020Mode.TARGET_ALLOCATION },
+                                color = if (chartMode == Donut503020Mode.TARGET_ALLOCATION) BrickPrimary else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "Règle 50/30/20 Cible",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (chartMode == Donut503020Mode.TARGET_ALLOCATION) Color(0xFF0A0E1A) else BrickTextMuted
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Donut503020Chart(
+                            needs = uiState.needs,
+                            wants = uiState.wants,
+                            savings = uiState.savings,
+                            currency = uiState.currency,
+                            mode = chartMode
+                        )
+                    }
+                }
+            }
+
+            // Buckets Breakdown Details (Needs, Wants, Savings)
+            item {
+                Text(
+                    text = "Détail des Enveloppes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = BrickTextPrimary
+                )
+            }
+
+            // Needs 50%
+            item {
+                BucketCard(
+                    breakdown = uiState.needs,
+                    title = "Besoins Vitaux (50%)",
+                    description = "Nourriture, loyer, transport, électricité, santé",
+                    color = NeedColor,
+                    currency = uiState.currency
+                )
+            }
+
+            // Wants 30%
+            item {
+                BucketCard(
+                    breakdown = uiState.wants,
+                    title = "Envies & Confort (30%)",
+                    description = "Sorties, restaurants, shopping, loisirs",
+                    color = WantColor,
+                    currency = uiState.currency
+                )
+            }
+
+            // Savings 20%
+            item {
+                BucketCard(
+                    breakdown = uiState.savings,
+                    title = "Épargne & Dettes (20%)",
+                    description = "Tontine, réserve de sécurité, investissement, remboursement",
+                    color = SaveColor,
+                    currency = uiState.currency
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(30.dp))
+            }
+        }
+    }
+
+    if (showCustomIncomeDialog) {
+        CustomIncomeDialog(
+            currentIncome = uiState.monthlyIncome,
+            currency = uiState.currency,
+            onDismiss = { showCustomIncomeDialog = false },
+            onConfirm = { newIncome ->
+                viewModel.setCustomIncome(newIncome)
+                showCustomIncomeDialog = false
+            },
+            onReset = {
+                viewModel.clearCustomIncome()
+                showCustomIncomeDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun BucketCard(
+    breakdown: BudgetBucketBreakdown,
+    title: String,
+    description: String,
+    color: Color,
+    currency: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = BrickSurfaceElevated,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, if (breakdown.isExceeded) CoralDanger else BrickSurfaceBorder)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(color)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+                }
+
+                if (breakdown.isExceeded) {
+                    Surface(
+                        color = CoralDanger.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "DÉPASSÉ 🚨",
+                            color = CoralDanger,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(description, style = MaterialTheme.typography.bodySmall, color = BrickTextMuted, fontSize = 11.sp)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            FinancialProgressBar(
+                ratio = breakdown.ratio,
+                color = if (breakdown.isExceeded) CoralDanger else color,
+                height = 8.dp
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Dépensé", style = MaterialTheme.typography.labelSmall, color = BrickTextMuted, fontSize = 10.sp)
+                    Text(
+                        "${String.format("%,.0f", breakdown.spentAmount)} $currency",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (breakdown.isExceeded) CoralDanger else BrickTextPrimary
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Plafond alloué", style = MaterialTheme.typography.labelSmall, color = BrickTextMuted, fontSize = 10.sp)
+                    Text(
+                        "${String.format("%,.0f", breakdown.targetAmount)} $currency",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = BrickTextMuted
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        if (breakdown.isExceeded) "Dépassement" else "Reste disponible",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (breakdown.isExceeded) CoralDanger else EmeraldSuccess,
+                        fontSize = 10.sp
+                    )
+                    Text(
+                        "${String.format("%,.0f", if (breakdown.isExceeded) -breakdown.remainingAmount else breakdown.remainingAmount)} $currency",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (breakdown.isExceeded) CoralDanger else EmeraldSuccess
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun CategoryGaugeItem(
-    category: String,
-    spent: Double,
-    limit: Double,
-    currency: String
+private fun CustomIncomeDialog(
+    currentIncome: Double,
+    currency: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit,
+    onReset: () -> Unit
 ) {
-    val ratio = (spent / max(1.0, limit)).toFloat()
-    val progress = ratio.coerceIn(0f, 1f)
-    val isOver = ratio >= 1.0f
-    val isWarning = ratio >= 0.8f && ratio < 1.0f
+    var inputStr by remember { mutableStateOf(if (currentIncome > 0) currentIncome.toInt().toString() else "") }
 
-    val statusColor = when {
-        isOver -> CoralDanger
-        isWarning -> AmberWarning
-        else -> EmeraldSuccess
-    }
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Ajuster la base de calcul", fontWeight = FontWeight.Bold, color = BrickTextPrimary)
+        },
+        text = {
+            Column {
                 Text(
-                    text = category,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextWhite
+                    "Définissez un montant de base mensuel pour projeter les allocations 50/30/20, ou réinitialisez pour utiliser automatiquement le cash réel de votre caisse.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BrickTextMuted
                 )
-                if (isOver) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Dépassement",
-                        tint = CoralDanger,
-                        modifier = Modifier.size(14.dp)
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = inputStr,
+                    onValueChange = { newVal ->
+                        if (newVal.all { it.isDigit() }) inputStr = newVal
+                    },
+                    label = { Text("Base de calcul mensuelle ($currency)", color = BrickTextMuted) },
+                    trailingIcon = { Text(currency, color = BrickPrimary, modifier = Modifier.padding(end = 12.dp)) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BrickPrimary,
+                        unfocusedBorderColor = BrickSurfaceBorder,
+                        focusedTextColor = BrickTextPrimary,
+                        unfocusedTextColor = BrickTextPrimary
                     )
-                }
+                )
             }
-
-            Text(
-                text = "${spent.toInt()} / ${limit.toInt()} $currency (${(ratio * 100).toInt()}%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = statusColor
-            )
-        }
-
-        Spacer(modifier = Modifier.height(5.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = statusColor,
-            trackColor = BrickSurfaceBorder
-        )
-    }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val amount = inputStr.toDoubleOrNull() ?: 0.0
+                    onConfirm(amount)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = BrickPrimary)
+            ) {
+                Text("Valider", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onReset) {
+                Text("Réinitialiser (Auto-Caisse)", color = BrickTextMuted)
+            }
+        },
+        containerColor = BrickSurface
+    )
 }
