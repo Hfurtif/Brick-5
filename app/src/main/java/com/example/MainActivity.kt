@@ -1,7 +1,10 @@
 package com.example
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -24,8 +27,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.data.model.UserProfile
+import com.example.notification.BrickNotificationHelper
+import com.example.notification.BudgetThresholdWorker
 import com.example.ui.screens.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.BrickViewModel
@@ -46,6 +53,13 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize Notification channels and periodic WorkManager checks
+        BrickNotificationHelper.createChannels(this)
+        BudgetThresholdWorker.schedulePeriodicCheck(this)
+
+        handleIntentNavigation(intent)
+        requestNotificationPermissionIfNeeded()
 
         setContent {
             val userProfile by viewModel.userProfile.collectAsState()
@@ -125,6 +139,31 @@ class MainActivity : FragmentActivity() {
                         )
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntentNavigation(intent)
+    }
+
+    private fun handleIntentNavigation(intent: Intent?) {
+        val targetTab = intent?.getIntExtra("NAVIGATE_TO_TAB", -1) ?: -1
+        if (targetTab >= 0) {
+            viewModel.selectScreen(targetTab)
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    101
+                )
             }
         }
     }

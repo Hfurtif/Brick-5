@@ -201,8 +201,8 @@ class Budget503020ViewModel(
             }
         }
 
-        // Trigger notifications for new exceeded alerts
-        generatedAlerts.filter { it.severity == BudgetAlertSeverity.EXCEEDED }.forEach { alert ->
+        // Trigger notifications for new alerts (both 80% warning and 100% exceeded)
+        generatedAlerts.filter { it.severity == BudgetAlertSeverity.EXCEEDED || it.severity == BudgetAlertSeverity.WARNING }.forEach { alert ->
             if (!previousExceededAlertIds.contains(alert.id)) {
                 previousExceededAlertIds.add(alert.id)
                 viewModelScope.launch {

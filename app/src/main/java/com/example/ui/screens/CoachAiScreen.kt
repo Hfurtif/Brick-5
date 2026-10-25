@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ai.CoachMessage
@@ -43,6 +45,7 @@ fun CoachAiScreen(
         modifier = modifier
             .fillMaxSize()
             .background(BrickBackground)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding(),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -53,26 +56,67 @@ fun CoachAiScreen(
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Header
+            // Header with flexbox-centered En ligne (IA+) badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "🤖", fontSize = 26.sp)
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Coach Financier BRICK",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = BrickTextPrimary
-                    )
-                    Text(
-                        text = "Conseils personnalisés & stratégie offline-first",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BrickTextMuted,
-                        fontSize = 12.sp
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🤖", fontSize = 26.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Coach Financier BRICK",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = BrickTextPrimary,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Conseils personnalisés & stratégie offline",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BrickTextMuted,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Centered flexbox badge for online IA+ status
+                Surface(
+                    color = EmeraldSuccess.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, EmeraldSuccess.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(EmeraldSuccess, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "En ligne (IA+)",
+                            color = EmeraldSuccess,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
 

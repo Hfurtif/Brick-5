@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -38,9 +40,27 @@ fun AssetsLiabilitiesScreen(
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var selectedCategoryFilter by remember { mutableStateOf<String?>("ALL") }
 
     val assets = assetsLiabilities.filter { it.type == "ACTIF" }
     val liabilities = assetsLiabilities.filter { it.type == "PASSIF" }
+
+    val displayAssets = remember(assets, selectedCategoryFilter) {
+        when (selectedCategoryFilter) {
+            "PASSIF" -> emptyList()
+            "TONTINE" -> assets.filter { it.category.contains("Tontine", ignoreCase = true) || it.name.contains("Tontine", ignoreCase = true) }
+            "EPARGNE" -> assets.filter { it.category.contains("Épargne", ignoreCase = true) || it.category.contains("Mobile", ignoreCase = true) }
+            "BUSINESS" -> assets.filter { it.category.contains("Business", ignoreCase = true) || it.name.contains("Business", ignoreCase = true) }
+            else -> assets
+        }
+    }
+
+    val displayLiabilities = remember(liabilities, selectedCategoryFilter) {
+        when (selectedCategoryFilter) {
+            "ACTIF", "TONTINE", "EPARGNE", "BUSINESS" -> emptyList()
+            else -> liabilities
+        }
+    }
 
     val totalAssets = assets.sumOf { it.value }
     val totalLiabilities = liabilities.sumOf { it.value }
@@ -49,7 +69,8 @@ fun AssetsLiabilitiesScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BrickBackground),
+            .background(BrickBackground)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
@@ -67,19 +88,29 @@ fun AssetsLiabilitiesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Actifs vs Passifs",
+                            text = "Objectifs d'Épargne & Actifs",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = BrickTextPrimary
+                            color = BrickTextPrimary,
+                            fontSize = 20.sp,
+                            softWrap = true,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Bâtissez un patrimoine qui travaille pour vous",
                             style = MaterialTheme.typography.bodySmall,
-                            color = BrickTextMuted
+                            color = BrickTextMuted,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
                         onClick = { showAddDialog = true },
@@ -90,6 +121,51 @@ fun AssetsLiabilitiesScreen(
                         Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF0A0E1A), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Ajouter", color = Color(0xFF0A0E1A), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+            }
+
+            // Horizontal Scrollable Filter Chips (prevents horizontal crushing)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        "ALL" to "Tous (${assets.size + liabilities.size})",
+                        "ACTIF" to "Actifs 📈 (${assets.size})",
+                        "PASSIF" to "Passifs 💳 (${liabilities.size})",
+                        "TONTINE" to "Tontines 🏺",
+                        "EPARGNE" to "Épargne 🏦",
+                        "BUSINESS" to "Business 📦"
+                    ).forEach { (code, label) ->
+                        val isSelected = selectedCategoryFilter == code
+                        Surface(
+                            modifier = Modifier
+                                .clickable { selectedCategoryFilter = code }
+                                .widthIn(min = 84.dp)
+                                .height(36.dp),
+                            color = if (isSelected) BrickPrimary else BrickSurfaceElevated,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, if (isSelected) BrickPrimary else BrickSurfaceBorder)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) Color(0xFF0A0E1A) else BrickTextPrimary,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -154,73 +230,77 @@ fun AssetsLiabilitiesScreen(
             }
 
             // Actifs Section
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Actifs & Réserves (${assets.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = EmeraldSuccess
-                    )
-                }
-            }
-
-            if (assets.isEmpty()) {
+            if (displayAssets.isNotEmpty() || selectedCategoryFilter in listOf("ALL", "ACTIF", "TONTINE", "EPARGNE", "BUSINESS")) {
                 item {
-                    EmptySectionCard(
-                        icon = "📈",
-                        message = "Aucun actif déclaré. Ajoutez votre réserve tontine, compte Mobile Money ou business."
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Actifs & Réserves (${displayAssets.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = EmeraldSuccess
+                        )
+                    }
                 }
-            } else {
-                items(assets, key = { it.id }) { item ->
-                    AssetLiabilityRow(
-                        item = item,
-                        currency = currency,
-                        hideAmounts = hideAmounts,
-                        isAsset = true,
-                        onDelete = { onDeleteAssetLiability(item) }
-                    )
+
+                if (displayAssets.isEmpty()) {
+                    item {
+                        EmptySectionCard(
+                            icon = "📈",
+                            message = "Aucun actif trouvé pour ce filtre. Ajoutez votre réserve tontine, Mobile Money ou business."
+                        )
+                    }
+                } else {
+                    items(displayAssets, key = { it.id }) { item ->
+                        AssetLiabilityRow(
+                            item = item,
+                            currency = currency,
+                            hideAmounts = hideAmounts,
+                            isAsset = true,
+                            onDelete = { onDeleteAssetLiability(item) }
+                        )
+                    }
                 }
             }
 
             // Passifs Section
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Passifs & Dettes (${liabilities.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = CoralDanger
-                    )
-                }
-            }
-
-            if (liabilities.isEmpty()) {
+            if (displayLiabilities.isNotEmpty() || selectedCategoryFilter in listOf("ALL", "PASSIF")) {
                 item {
-                    EmptySectionCard(
-                        icon = "🛡️",
-                        message = "Aucune dette active ! Votre forteresse est libre de tout fardeau financier."
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Passifs & Dettes (${displayLiabilities.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = CoralDanger
+                        )
+                    }
                 }
-            } else {
-                items(liabilities, key = { it.id }) { item ->
-                    AssetLiabilityRow(
-                        item = item,
-                        currency = currency,
-                        hideAmounts = hideAmounts,
-                        isAsset = false,
-                        onDelete = { onDeleteAssetLiability(item) }
-                    )
+
+                if (displayLiabilities.isEmpty()) {
+                    item {
+                        EmptySectionCard(
+                            icon = "🛡️",
+                            message = "Aucune dette active ! Votre forteresse est libre de tout fardeau financier."
+                        )
+                    }
+                } else {
+                    items(displayLiabilities, key = { it.id }) { item ->
+                        AssetLiabilityRow(
+                            item = item,
+                            currency = currency,
+                            hideAmounts = hideAmounts,
+                            isAsset = false,
+                            onDelete = { onDeleteAssetLiability(item) }
+                        )
+                    }
                 }
             }
 
@@ -443,6 +523,49 @@ private fun AddAssetLiabilityDialog(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Catégorie : $category",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BrickTextMuted,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val activeCategories = if (type == "ACTIF") assetCategories else liabilityCategories
+                        activeCategories.forEach { cat ->
+                            val isSel = category == cat
+                            Surface(
+                                modifier = Modifier
+                                    .clickable { category = cat }
+                                    .height(34.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSel) BrickPrimary else BrickSurfaceElevated,
+                                border = BorderStroke(1.dp, if (isSel) BrickPrimary else BrickSurfaceBorder)
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = cat,
+                                        color = if (isSel) Color(0xFF0A0E1A) else BrickTextPrimary,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     OutlinedTextField(
                         value = valueStr,

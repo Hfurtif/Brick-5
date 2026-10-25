@@ -38,6 +38,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
     fun getTransactionsBetween(startTime: Long, endTime: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
+    suspend fun getTransactionsBetweenDirect(startTime: Long, endTime: Long): List<TransactionEntity>
+
     @Query("SELECT * FROM transactions WHERE priority = :priority ORDER BY timestamp DESC")
     fun getTransactionsByPriority(priority: String): Flow<List<TransactionEntity>>
 

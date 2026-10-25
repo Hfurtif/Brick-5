@@ -15,13 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.Donut503020Chart
-import com.example.ui.components.Donut503020Mode
 import com.example.ui.components.FinancialProgressBar
+import com.example.ui.components.Recharts503020PieChart
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.*
 
@@ -30,14 +32,15 @@ fun BudgetAnalyticsScreen(
     viewModel: Budget503020ViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    var chartMode by remember { mutableStateOf(Donut503020Mode.ACTUAL_SPENT) }
     var showCustomIncomeDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BrickBackground),
+            .background(BrickBackground)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
@@ -55,19 +58,29 @@ fun BudgetAnalyticsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Règle 50/30/20",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = BrickTextPrimary
+                            color = BrickTextPrimary,
+                            fontSize = 20.sp,
+                            softWrap = true,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Besoins (50%) • Envies (30%) • Épargne (20%)",
                             style = MaterialTheme.typography.bodySmall,
-                            color = BrickTextMuted
+                            color = BrickTextMuted,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Surface(
                         modifier = Modifier.clickable { showCustomIncomeDialog = true },
@@ -141,7 +154,7 @@ fun BudgetAnalyticsScreen(
                 }
             }
 
-            // Donut Chart Container
+            // Recharts 50/30/20 Pie Chart Container
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -153,61 +166,11 @@ fun BudgetAnalyticsScreen(
                         modifier = Modifier.padding(18.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Toggle Chart Mode (Dépensé Réel vs Règle Cible)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(38.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(BrickSurface)
-                                .padding(3.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable { chartMode = Donut503020Mode.ACTUAL_SPENT },
-                                color = if (chartMode == Donut503020Mode.ACTUAL_SPENT) BrickPrimary else Color.Transparent,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "Dépensé Réel",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (chartMode == Donut503020Mode.ACTUAL_SPENT) Color(0xFF0A0E1A) else BrickTextMuted
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable { chartMode = Donut503020Mode.TARGET_ALLOCATION },
-                                color = if (chartMode == Donut503020Mode.TARGET_ALLOCATION) BrickPrimary else Color.Transparent,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "Règle 50/30/20 Cible",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (chartMode == Donut503020Mode.TARGET_ALLOCATION) Color(0xFF0A0E1A) else BrickTextMuted
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        Donut503020Chart(
+                        Recharts503020PieChart(
                             needs = uiState.needs,
                             wants = uiState.wants,
                             savings = uiState.savings,
-                            currency = uiState.currency,
-                            mode = chartMode
+                            currency = uiState.currency
                         )
                     }
                 }
@@ -254,6 +217,65 @@ fun BudgetAnalyticsScreen(
                     color = SaveColor,
                     currency = uiState.currency
                 )
+            }
+
+            // WorkManager 80% Threshold Monitoring Card
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = BrickSurfaceElevated,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, CyberGold.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "⚡", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Surveillance Seuil 80% (WorkManager)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrickTextPrimary
+                                )
+                                Text(
+                                    text = "Vérification locale en tâche de fond (WorkManager) et à chaque dépense",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BrickTextMuted,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "Si vos dépenses en Besoins (50%), Envies (30%) ou Épargne (20%) atteignent ou dépassent 80% du plafond mensuel, une notification locale haute priorité vous alerte immédiatement.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BrickTextPrimary,
+                            fontSize = 12.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Button(
+                            onClick = {
+                                com.example.notification.BudgetThresholdWorker.enqueueCheck(context, force = true)
+                                Toast.makeText(context, "Vérification WorkManager 80% exécutée !", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberGold.copy(alpha = 0.2f)),
+                            border = BorderStroke(1.dp, CyberGold),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = CyberGold, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Tester la vérification WorkManager", color = CyberGold, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
             }
 
             item {

@@ -72,6 +72,74 @@ object BrickNotificationHelper {
         manager.notify(alert.id.hashCode(), notification)
     }
 
+    fun sendBudgetThresholdAlert(
+        context: Context,
+        categoryType: com.example.ui.viewmodel.BudgetCategoryType,
+        ratio: Double,
+        spent: Double,
+        target: Double,
+        currency: String
+    ) {
+        createChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("NAVIGATE_TO_TAB", 2)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            categoryType.ordinal + 8000,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val percent = (ratio * 100).toInt()
+        val remaining = maxOf(0.0, target - spent)
+        val isExceeded = ratio >= 1.0
+
+        val title = if (isExceeded) {
+            "🚨 Plafond Dépassé : ${categoryType.label} ($percent%)"
+        } else {
+            "⚠️ Alerte 80% Budget : ${categoryType.label} ($percent%)"
+        }
+
+        val shortMessage = if (isExceeded) {
+            "Plafond de ${String.format("%,.0f", target)} $currency dépassé de ${String.format("%,.0f", spent - target)} $currency."
+        } else {
+            "Plus que ${String.format("%,.0f", remaining)} $currency disponible avant d'atteindre votre plafond de ${String.format("%,.0f", target)} $currency."
+        }
+
+        val recommendation = when (categoryType) {
+            com.example.ui.viewmodel.BudgetCategoryType.NEEDS ->
+                "Vos charges incompressibles consomment l'essentiel du budget. Vérifiez les dépenses de nourriture, transport ou loyer."
+            com.example.ui.viewmodel.BudgetCategoryType.WANTS ->
+                "Freinez les sorties, loisirs et achats d'impulsion pour sécuriser votre reste à vivre."
+            com.example.ui.viewmodel.BudgetCategoryType.SAVINGS ->
+                "Priorisez votre tontine et votre épargne de sécurité avant tout autre engagement."
+        }
+
+        val bigText = buildString {
+            append("Consommation : ${String.format("%,.0f", spent)} $currency sur ${String.format("%,.0f", target)} $currency ($percent%).\n")
+            append(shortMessage)
+            append("\n\n💡 Conseil BRICK :\n")
+            append(recommendation)
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_BUDGET_ALERTS)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle(title)
+            .setContentText(shortMessage)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(categoryType.ordinal + 8000, notification)
+    }
+
     fun sendDailyRecapNotification(
         context: Context,
         resteAVivre: Double,

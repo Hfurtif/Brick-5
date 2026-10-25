@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ai.FinancialSnapshot
@@ -57,7 +58,8 @@ fun DashboardScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BrickBackground),
+            .background(BrickBackground)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
@@ -68,40 +70,107 @@ fun DashboardScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header: User welcome + Privacy toggle
+            // Header: User welcome + Centered Status Badges + Privacy toggle
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Bonjour, ${user?.name ?: "Bâtisseur"} 🛡️",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = BrickTextPrimary,
-                            fontSize = 20.sp
+                            fontSize = 20.sp,
+                            softWrap = true,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Forteresse financière • 🔥 ${user?.streakDays ?: 1} jours de discipline",
+                            text = "Forteresse financière offline-first",
                             style = MaterialTheme.typography.bodySmall,
                             color = BrickTextMuted,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    IconButton(
-                        onClick = onToggleHideAmounts,
-                        modifier = Modifier
-                            .size(42.dp)
-                            .testTag("toggle_privacy_btn")
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            imageVector = if (hideAmounts) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Confidentialité",
-                            tint = BrickPrimary
-                        )
+                        // Streak Flame Badge (Flexbox centered layout)
+                        Surface(
+                            color = Color(0xFF1E1710),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, CyberGold.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = "🔥", fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "${user?.streakDays ?: 1}j",
+                                    color = CyberGold,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        // Online (IA+) Badge (Flexbox centered layout)
+                        Surface(
+                            color = EmeraldSuccess.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, EmeraldSuccess.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(EmeraldSuccess, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "En ligne (IA+)",
+                                    color = EmeraldSuccess,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        // Privacy Toggle Button
+                        IconButton(
+                            onClick = onToggleHideAmounts,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("toggle_privacy_btn")
+                        ) {
+                            Icon(
+                                imageVector = if (hideAmounts) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "Confidentialité",
+                                tint = BrickPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }

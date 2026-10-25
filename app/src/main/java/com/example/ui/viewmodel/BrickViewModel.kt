@@ -219,12 +219,16 @@ class BrickViewModel(application: Application) : AndroidViewModel(application) {
                     isRecurring = isRecurring
                 )
             )
+            if (type == "DEPENSE") {
+                com.example.notification.BudgetThresholdWorker.enqueueCheck(getApplication())
+            }
         }
     }
 
     fun deleteTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
             repository.deleteTransaction(transaction)
+            com.example.notification.BudgetThresholdWorker.enqueueCheck(getApplication())
         }
     }
 
