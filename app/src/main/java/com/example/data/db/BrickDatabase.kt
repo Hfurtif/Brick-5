@@ -29,6 +29,18 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    fun getTransactionById(id: Long): Flow<TransactionEntity?>
+
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    suspend fun getTransactionByIdDirect(id: Long): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE type = :type ORDER BY timestamp DESC")
+    fun getTransactionsByType(type: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE category = :category ORDER BY timestamp DESC")
+    fun getTransactionsByCategory(category: String): Flow<List<TransactionEntity>>
+
     @Query("SELECT * FROM transactions WHERE timestamp >= :startTime ORDER BY timestamp DESC")
     fun getTransactionsSince(startTime: Long): Flow<List<TransactionEntity>>
 
@@ -62,8 +74,17 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(transactions: List<TransactionEntity>)
+
+    @Update
+    suspend fun updateTransaction(transaction: TransactionEntity)
+
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
+
+    @Query("DELETE FROM transactions WHERE id = :id")
+    suspend fun deleteTransactionById(id: Long)
 
     @Query("DELETE FROM transactions")
     suspend fun clearAll()
