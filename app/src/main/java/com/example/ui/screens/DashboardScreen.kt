@@ -43,6 +43,7 @@ fun DashboardScreen(
     onOpenSimulator: () -> Unit,
     onNavigateToBudget: () -> Unit,
     onDeleteTransaction: (TransactionEntity) -> Unit,
+    onViewAllTransactions: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currency = user?.currency ?: "FCFA"
@@ -406,11 +407,22 @@ fun DashboardScreen(
                         fontWeight = FontWeight.Bold,
                         color = BrickTextPrimary
                     )
-                    Text(
-                        text = "${transactions.size} au total",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BrickTextMuted
-                    )
+                    Surface(
+                        modifier = Modifier
+                            .clickable { onViewAllTransactions() }
+                            .testTag("view_all_transactions_btn"),
+                        color = BrickPrimary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, BrickPrimary.copy(alpha = 0.4f))
+                    ) {
+                        Text(
+                            text = "Voir tout (${transactions.size}) →",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BrickPrimary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 

@@ -190,74 +190,90 @@ fun MainAppContent(
     val simulationResult by viewModel.simulationResult.collectAsState()
     val coachMessages by viewModel.coachMessages.collectAsState()
     val isCoachTyping by viewModel.isCoachTyping.collectAsState()
+    var showAllTransactionsScreen by remember { mutableStateOf(false) }
 
     val currency = userProfile?.currency ?: "FCFA"
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = BrickBackground,
-        bottomBar = {
-            BrickBottomNavigationBar(
-                selectedScreen = currentScreen,
-                onSelectScreen = { viewModel.selectScreen(it) }
-            )
-        }
-    ) { innerPadding ->
-        Box(
+    if (showAllTransactionsScreen || currentScreen == 6) {
+        TransactionListScreen(
+            transactions = transactions,
+            currency = currency,
+            hideAmounts = userProfile?.hideAmounts ?: false,
+            onAddTransactionClick = { viewModel.openAddExpenseDialog("DEPENSE") },
+            onDeleteTransaction = { viewModel.deleteTransaction(it) },
+            onBackClick = {
+                showAllTransactionsScreen = false
+                if (currentScreen == 6) viewModel.selectScreen(0)
+            }
+        )
+    } else {
+        Scaffold(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (currentScreen) {
-                0 -> DashboardScreen(
-                    user = userProfile,
-                    snapshot = snapshot,
-                    transactions = transactions,
-                    todayTotalSpent = todaySpent,
-                    onToggleHideAmounts = { viewModel.toggleHideAmounts() },
-                    onQuickAdd = { viewModel.openQuickAddSheet() },
-                    onAddExpense = { viewModel.openAddExpenseDialog("DEPENSE") },
-                    onAddIncome = { viewModel.openAddExpenseDialog("REVENU") },
-                    onOpenEveningRecap = { viewModel.openEveningRecap() },
-                    onOpenSimulator = { viewModel.openPurchaseSimulator() },
-                    onNavigateToBudget = { viewModel.selectScreen(2) },
-                    onDeleteTransaction = { viewModel.deleteTransaction(it) }
+                .windowInsetsPadding(WindowInsets.safeDrawing),
+            containerColor = BrickBackground,
+            bottomBar = {
+                BrickBottomNavigationBar(
+                    selectedScreen = currentScreen,
+                    onSelectScreen = { viewModel.selectScreen(it) }
                 )
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when (currentScreen) {
+                    0 -> DashboardScreen(
+                        user = userProfile,
+                        snapshot = snapshot,
+                        transactions = transactions,
+                        todayTotalSpent = todaySpent,
+                        onToggleHideAmounts = { viewModel.toggleHideAmounts() },
+                        onQuickAdd = { viewModel.openQuickAddSheet() },
+                        onAddExpense = { viewModel.openAddExpenseDialog("DEPENSE") },
+                        onAddIncome = { viewModel.openAddExpenseDialog("REVENU") },
+                        onOpenEveningRecap = { viewModel.openEveningRecap() },
+                        onOpenSimulator = { viewModel.openPurchaseSimulator() },
+                        onNavigateToBudget = { viewModel.selectScreen(2) },
+                        onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                        onViewAllTransactions = { showAllTransactionsScreen = true }
+                    )
 
-                1 -> BusinessFlowScreen(
-                    transactions = transactions,
-                    currency = currency,
-                    onAddBusinessFlow = { viewModel.openAddExpenseDialog("REVENU") }
-                )
+                    1 -> BusinessFlowScreen(
+                        transactions = transactions,
+                        currency = currency,
+                        onAddBusinessFlow = { viewModel.openAddExpenseDialog("REVENU") }
+                    )
 
-                2 -> BudgetAnalyticsScreen(
-                    viewModel = budgetViewModel
-                )
+                    2 -> BudgetAnalyticsScreen(
+                        viewModel = budgetViewModel
+                    )
 
-                3 -> AssetsLiabilitiesScreen(
-                    assetsLiabilities = assetsLiabilities,
-                    currency = currency,
-                    hideAmounts = userProfile?.hideAmounts ?: false,
-                    onAddAssetLiability = { name, type, cat, value, cashflow, note ->
-                        viewModel.addAssetLiability(name, type, cat, value, cashflow, note)
-                    },
-                    onDeleteAssetLiability = { viewModel.deleteAssetLiability(it) }
-                )
+                    3 -> AssetsLiabilitiesScreen(
+                        assetsLiabilities = assetsLiabilities,
+                        currency = currency,
+                        hideAmounts = userProfile?.hideAmounts ?: false,
+                        onAddAssetLiability = { name, type, cat, value, cashflow, note ->
+                            viewModel.addAssetLiability(name, type, cat, value, cashflow, note)
+                        },
+                        onDeleteAssetLiability = { viewModel.deleteAssetLiability(it) }
+                    )
 
-                4 -> CoachAiScreen(
-                    messages = coachMessages,
-                    isTyping = isCoachTyping,
-                    onSendMessage = { viewModel.askCoach(it) }
-                )
+                    4 -> CoachAiScreen(
+                        messages = coachMessages,
+                        isTyping = isCoachTyping,
+                        onSendMessage = { viewModel.askCoach(it) }
+                    )
 
-                5 -> ProfileSecurityScreen(
-                    user = userProfile,
-                    badges = badges,
-                    onUpdateProfile = { viewModel.updateProfile(it) },
-                    onResetData = { viewModel.resetData() }
-                )
+                    5 -> ProfileSecurityScreen(
+                        user = userProfile,
+                        badges = badges,
+                        onUpdateProfile = { viewModel.updateProfile(it) },
+                        onResetData = { viewModel.resetData() }
+                    )
+                }
             }
         }
     }
